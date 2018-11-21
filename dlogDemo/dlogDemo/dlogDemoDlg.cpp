@@ -100,12 +100,17 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	CRect rc(0,0,500,400);
+	CRect rc;//(0,0,500,400);
+	GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
+	ScreenToClient(rc);
+	//ClientToScreen(rc);
 
-	GetClientRect(rc);
-	rc.InflateRect(0, 0, -200, -100);
+	//GetClientRect(rc);
+	//rc.InflateRect(0, 0, 0, -100);
 
-	m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
+	//m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
+	m_log.Create(rc, this, IDC_STATIC_LOG);
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 

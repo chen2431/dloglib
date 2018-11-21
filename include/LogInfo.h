@@ -31,8 +31,8 @@ public:
 
 	enum
 	{
-		STATE_CLOSE=0,
-		STATE_OPEN,
+		STATE_OPEN=0,
+		STATE_CLOSE,
 		STATE_NONE
 	};
 
@@ -229,7 +229,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>m_iDataLen) iEnd = m_iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -252,7 +252,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*2);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*2);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -275,7 +275,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*2);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*2);
 
 			CString sTemp;
 			WORD wTemp;
@@ -303,7 +303,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*4);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*4);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -324,7 +324,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*4);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*4);
 
 			CString sTemp;
 			DWORD dwTemp;
@@ -349,7 +349,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*8);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*8);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -370,7 +370,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*8);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*8);
 
 			CString sTemp;
 			unsigned __int64 llTemp;
@@ -393,7 +393,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*4);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*4);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -414,7 +414,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*4);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*4);
 
 			CString sTemp;
 			float fTemp;
@@ -439,7 +439,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*8);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*8);
 
 			CString sTemp;
 			for(int i=iBeg; i<iEnd; i++)
@@ -460,7 +460,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 			int iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>iDataLen) iEnd = iDataLen;
 
-			sLine.Format(_T("%08X"), iLineIdx*m_iLineHexCnt*8);
+			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt*8);
 
 			CString sTemp;
 			double fTemp;

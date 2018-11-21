@@ -29,8 +29,9 @@ struct INFO_IDX
 	CLogInfo*pLogInfo;	//!<pointer of CLogInfo(log information)
 };
 
-// CLogWnd
-
+// 
+/** class CLogWnd
+*/
 class AFX_EXT_CLASS CLogWnd : public CWnd
 {
 	DECLARE_DYNAMIC(CLogWnd)
@@ -38,6 +39,11 @@ class AFX_EXT_CLASS CLogWnd : public CWnd
 public:
 	CLogWnd();
 	virtual ~CLogWnd();
+
+	/** 
+	 *
+	 */
+	BOOL Create(RECT& rect, CWnd* pParentWnd, UINT nID);
 
 	/** 设置每行显示数据参数
 	 * @param iLineDataCnt 每行显示数据的数量
@@ -58,7 +64,8 @@ public:
 	 */
 	void SetFormat(LPCSTR sFormat, int iDataType);
 
-	//日志显示
+	/** 日志显示
+	 */
 	void LogInfo(LPCSTR sInfo, int iLogType, BYTE*pData=NULL, int len=0, int iDataType=0);
 
 protected:

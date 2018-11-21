@@ -79,7 +79,21 @@ END_MESSAGE_MAP()
 
 
 
-// CLogWnd 消息处理程序
+BOOL CLogWnd::Create(RECT& rect,CWnd* pParentWnd, UINT nID)
+{
+	CRect rc;
+
+	CWnd*pWnd = pParentWnd->GetDlgItem(nID);
+	if(pWnd)
+	{
+		pWnd->GetWindowRect(rc);
+		pParentWnd->ScreenToClient(rc);
+
+		return CWnd::Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, pParentWnd, nID);
+	}
+
+	return CWnd::Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rect, pParentWnd, nID);
+}
 
 // CLogWnd 消息处理程序
 int CLogWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
@@ -91,42 +105,15 @@ int CLogWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	ModifyStyle(0, WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL);
 
-	//for(int i=0; i<8; i++)
+	for(int i=0; i<8; i++)
 	{
-		BOOL rlt = m_bmpMark[0].LoadBitmap(IDB_MARK_1);
+		BOOL rlt = m_bmpMark[i].LoadBitmap(IDB_MARK_1+i);
 		ASSERT(rlt);
 	}
-	{
-		BOOL rlt = m_bmpMark[1].LoadBitmap(IDB_MARK_2);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[2].LoadBitmap(IDB_MARK_3);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[3].LoadBitmap(IDB_MARK_4);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[4].LoadBitmap(IDB_MARK_5);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[5].LoadBitmap(IDB_MARK_6);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[6].LoadBitmap(IDB_MARK_7);
-		ASSERT(rlt);
-	}
-	{
-		BOOL rlt = m_bmpMark[7].LoadBitmap(IDB_MARK_8);
-		ASSERT(rlt);
-	}
-	m_bmpState[0].LoadBitmap(IDB_OPEN);
-	m_bmpState[1].LoadBitmap(IDB_CLOSE);
-	m_bmpState[2].LoadBitmap(IDB_NONE);
+
+	m_bmpState[CLogInfo::STATE_OPEN].LoadBitmap(IDB_OPEN);
+	m_bmpState[CLogInfo::STATE_CLOSE].LoadBitmap(IDB_CLOSE);
+	m_bmpState[CLogInfo::STATE_NONE].LoadBitmap(IDB_NONE);
 
 	SetTimer(1001, 100, NULL);
 
@@ -265,7 +252,7 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 		CRect rcState = rcLine;rcState.left = rcMark.right; rcState.right = rcState.left+20;
 		CRect rcTxt = rcLine; rcTxt.left = rcState.right;
 
-		CRect rcTxtEx = rcLine; rcTxtEx.left = rcMark.right; 
+		//CRect rcTxtEx = rcLine; rcTxtEx.left = rcMark.right; 
 
 
 		if(i<(int)m_vInfoIdx.size())
@@ -309,7 +296,7 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 				}
 				else
 				{
-					rcTxt.left = rcMark.right; 
+					rcTxt.left = rcMark.right+4; 
 				}
 
 				
