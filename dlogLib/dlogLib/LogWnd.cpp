@@ -253,9 +253,6 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 		CRect rcState = rcLine;rcState.left = rcMark.right; rcState.right = rcState.left+20;
 		CRect rcTxt = rcLine; rcTxt.left = rcState.right;
 
-		//CRect rcTxtEx = rcLine; rcTxtEx.left = rcMark.right; 
-
-
 		if(i<(int)m_vInfoIdx.size())
 		{
 			CLogInfo*pLogInfo = m_vInfoIdx[i].pLogInfo;
@@ -265,11 +262,11 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 			{
 				if(m_infoSel.iLineIdx==0)
 				{//显示多行
-					pDC->FillSolidRect(rcLine, m_colorSel);
+					pDC->FillSolidRect(rcTxt, m_colorSel);
 				}
 				else if(m_infoSel.iLineIdx==m_vInfoIdx[i].iLineIdx)
 				{//显示单行
-					pDC->FillSolidRect(rcLine, m_colorSel);
+					pDC->FillSolidRect(rcTxt, m_colorSel);
 				}
 			}
 			
@@ -287,7 +284,7 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 
 				//bitmao of state
 				int iShowState = m_vInfoIdx[i].pLogInfo->GetShowState();
-				if(iShowState<CLogInfo::STATE_NONE)
+				if(iShowState<CLogInfo::STATE_CNT)
 				{
 					CDC memDC;
 					memDC.CreateCompatibleDC(pDC);
@@ -295,10 +292,10 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 					pDC->TransparentBlt(rcState.left+2, rcState.top+2, 16, 16, &memDC, 0, 0, 16,16, 0xFFFFFF);
 					memDC.SelectObject(pOld);
 				}
-				else
-				{
-					rcTxt.left = rcMark.right+4; 
-				}
+				//else
+				//{
+				//	rcTxt.left = rcMark.right+4; 
+				//}
 
 				
 				CPen pen;

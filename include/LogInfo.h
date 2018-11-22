@@ -46,7 +46,8 @@ public:
 	{
 		STATE_OPEN=0,
 		STATE_CLOSE,
-		STATE_NONE
+		STATE_NONE,
+		STATE_CNT
 	};
 
 	void log(LPCSTR sInfo, int iLogType, const BYTE*pData, int len, int iDataType, int iTimeType)
