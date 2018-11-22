@@ -13,6 +13,7 @@ public:
 	CdlogDemoDlg(CWnd* pParent = NULL);	// 标准构造函数
 
 	CLogWnd m_log;
+	BOOL m_bInit;
 
 // 对话框数据
 	enum { IDD = IDD_DLOGDEMO_DIALOG };
@@ -34,4 +35,5 @@ protected:
 public:
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedButton2();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

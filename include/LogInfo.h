@@ -1,5 +1,7 @@
 #pragma once
 
+/** 日志类型
+*/
 enum{
 	LOG_DEBUG=0,
 	LOG_INFO,
@@ -8,6 +10,8 @@ enum{
 	LOG_FATAL
 };
 
+/** 数据类型
+*/
 enum{
 	DATA_HEX8=0,	//hex 8bit	
 	DATA_HEX16,
@@ -23,6 +27,15 @@ enum{
 	DATA_TYPE_CNT
 };
 
+/** 时间显示类型
+*/
+enum{
+	TT_DATE_TIME=0,		//year-month-day hour:minute:second 
+	TT_TIME,			//hour:minute:second 
+	TT_TIME_MSEC,		//hour:minute:second.msec 
+	TT_DATE_TIME_MSEC	//year-month-day hour:minute:second.msec
+};
+
 class CLogInfo
 {
 public:
@@ -36,14 +49,14 @@ public:
 		STATE_NONE
 	};
 
-	void log(LPCSTR sInfo, int iLogType, BYTE*pData=NULL, int len=0, int iDataType=0)
+	void log(LPCSTR sInfo, int iLogType, const BYTE*pData, int len, int iDataType, int iTimeType)
 	{
 		GetLocalTime(&m_stm);
 
-		sprintf_s(m_sInfo, 8192, "%04d-%02d-%02d %02d:%02d:%02d %s",
-			m_stm.wYear, m_stm.wMonth, m_stm.wDay, 
-			m_stm.wHour, m_stm.wMinute, m_stm.wSecond,
-			sInfo);
+		CString sTime;
+		TimeFormat(sTime, m_stm, iTimeType);
+
+		sprintf_s(m_sInfo, 8192, "%s %s", sTime, sInfo);
 
 		m_iLogType = iLogType;
 		m_iDataType = iDataType;
@@ -166,6 +179,13 @@ public:
 
 private:
 	void GetLineDataStr(CString&sLine, int iLineIdx);
+
+	/** 将系统时间转化为字符串
+	 * @param sTime: output string of time
+	 * @param stm : input system time
+	 * @param iTimeType: the type of time format
+	 */
+	void TimeFormat(CString& sTime, const SYSTEMTIME& stm, int iTimeType);
 
 };
 
@@ -482,4 +502,51 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		}
 	}
 }
+
+inline void CLogInfo::TimeFormat(CString& sTime, const SYSTEMTIME& stm, int iTimeType)
+{
+	switch(iTimeType)
+	{
+	case TT_DATE_TIME:
+		{
+			sTime.Format("%04d-%02d-%02d %02d:%02d:%02d", stm.wYear, stm.wMonth, stm.wDay, 
+				stm.wHour, stm.wMinute, stm.wSecond);
+		}
+		break;
+	case TT_TIME:
+		{
+			sTime.Format("%02d:%02d:%02d", stm.wHour, stm.wMinute, stm.wSecond);
+		}
+		break;
+	case TT_TIME_MSEC:
+		{
+			sTime.Format("%02d:%02d:%02d.%03d", stm.wHour, stm.wMinute, stm.wSecond, stm.wMilliseconds);
+		}
+		break;
+	case TT_DATE_TIME_MSEC:
+		{
+			sTime.Format("%04d-%02d-%02d %02d:%02d:%02d.%03d", stm.wYear, stm.wMonth, stm.wDay, 
+				stm.wHour, stm.wMinute, stm.wSecond, stm.wMilliseconds);
+		}
+		break;
+	default:
+		{
+			sTime.Format("%02d:%02d:%02d", stm.wHour, stm.wMinute, stm.wSecond);
+		}
+	}
+}
+
+
+/** 记录信息定位的结构
+ */
+struct INFO_IDX
+{
+	INFO_IDX():iInfoIdx(-1),iLineIdx(-1), pLogInfo(NULL){}
+
+	void Reset(){iInfoIdx = -1; iLineIdx=-1; pLogInfo=NULL;}
+
+	int iInfoIdx;		//!<which info
+	int iLineIdx;		//!<in this info , which line
+	CLogInfo*pLogInfo;	//!<pointer of CLogInfo(log information)
+};
 

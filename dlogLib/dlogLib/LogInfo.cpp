@@ -13,7 +13,6 @@ CLogInfo::CLogInfo(void)
 
 }
 
-
 CLogInfo::~CLogInfo(void)
 {
 	if(m_pData) delete [] m_pData;

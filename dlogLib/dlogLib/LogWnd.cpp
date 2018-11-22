@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "LogWnd.h"
 
+using namespace std;
 
 // CLogWnd
 
@@ -19,6 +20,7 @@ CLogWnd::CLogWnd()
 , m_colorSel(RGB(204,232,255))
 , m_bChange(false)
 , m_iTopPos(20000)
+, m_iTimeType(0)
 {
 	m_scrollHelper = new CScrollHelper;
 	m_scrollHelper->AttachWnd(this);
@@ -78,8 +80,7 @@ BEGIN_MESSAGE_MAP(CLogWnd, CWnd)
 END_MESSAGE_MAP()
 
 
-
-BOOL CLogWnd::Create(RECT& rect,CWnd* pParentWnd, UINT nID)
+BOOL CLogWnd::Create(RECT& rect, CWnd* pParentWnd, UINT nID)
 {
 	CRect rc;
 
@@ -516,11 +517,191 @@ void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDown(nFlags, point);
 }
 
+void CLogWnd::LogDebug(LPCSTR sLog)
+{
+	Log(sLog, LOG_DEBUG);
+}
+void CLogWnd::LogInfo(LPCSTR sLog)
+{
+	Log(sLog, LOG_INFO);
+}
+void CLogWnd::LogWarning(LPCSTR sLog)
+{
+	Log(sLog, LOG_WARN);
+}
+void CLogWnd::LogError(LPCSTR sLog)
+{
+	Log(sLog, LOG_ERROR);
+}
+void CLogWnd::LogFatal(LPCSTR sLog)
+{
+	Log(sLog, LOG_FATAL);
+}
 
-void CLogWnd::LogInfo(LPCSTR sInfo, int iLogType, BYTE*pData, int len, int iDataType)
+#define LOG_BUF_SIZE 8191
+
+void CLogWnd::LogDebug(const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_DEBUG);
+}
+void CLogWnd::LogInfo(const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_INFO);
+}
+void CLogWnd::LogWarning(const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_WARN);
+}
+void CLogWnd::LogError(const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_ERROR);
+}
+void CLogWnd::LogFatal(const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_FATAL);
+}
+
+void CLogWnd::LogDataDebug(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_DEBUG, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogDataInfo(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_INFO, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogDataWarning(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_WARN, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogDataError(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_ERROR, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogDataFatal(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	char szLogBuf[LOG_BUF_SIZE+1];
+	if(_vsnprintf_s(szLogBuf, LOG_BUF_SIZE, pszFmt, argp) == -1)
+	{
+		szLogBuf[LOG_BUF_SIZE] = '\0';
+	}
+
+	Log(szLogBuf, LOG_FATAL, pData, iDataLen, iDataType);
+}
+
+/** 日志显示
+*/
+void CLogWnd::LogData(int iLogType, const BYTE*pData, int iDataLen, LPCSTR sInfo, int iDataType)
+{
+	Log(sInfo, iLogType, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogDebug(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataType)
+{
+	Log(sInfo, LOG_DEBUG, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogInfo(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataType)
+{
+	Log(sInfo, LOG_INFO, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogWarning(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataType)
+{
+	Log(sInfo, LOG_WARN, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogError(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataType)
+{
+	Log(sInfo, LOG_ERROR, pData, iDataLen, iDataType);
+}
+
+void CLogWnd::LogFatal(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataType)
+{
+	Log(sInfo, LOG_FATAL, pData, iDataLen, iDataType);
+}
+
+inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iDataLen, int iDataType)
 {
 	CLogInfo* pLogInfo = new CLogInfo;
-	pLogInfo->log(sInfo, iLogType, pData, len, iDataType);
+	pLogInfo->log(sInfo, iLogType, pData, iDataLen, iDataType, m_iTimeType);
 	pLogInfo->SetLineDataCnt(m_iLineHexCnt[iDataType]);
 	pLogInfo->SetFormat(m_sFormat[iDataType]);
 	
@@ -565,50 +746,6 @@ void CLogWnd::OnTimer(UINT_PTR nIDEvent)
 	CWnd::OnTimer(nIDEvent);
 }
 
-
- /*
-BOOL CLogWnd::PreTranslateMessage(MSG* pMsg)
-{
-	 //SetFocus();
-	// TODO: 在此添加专用代码和/或调用基类
-	switch(pMsg->message)
-	{	
-	case WM_KEYDOWN://Windows键盘响应
-		switch(pMsg->wParam)
-		{ 
-		case VK_UP:
-			{
-				m_iLineMemSel--;
-				if(m_iLineMemSel>-1)
-				{
-					if(m_iLineMemSel<m_vInfoIdx.size())
-					{
-						m_infoSel = m_vInfoIdx[m_iLineMemSel];
-						InvalidateRect(NULL);
-					}
-				}
-
-				SetFocus();
-			}
-			break;
-		case VK_DOWN:
-			{
-				m_iLineMemSel++;
-				if(m_iLineMemSel<m_vInfoIdx.size())
-				{
-					m_infoSel = m_vInfoIdx[m_iLineMemSel];
-					InvalidateRect(NULL);
-				}
-				SetFocus();
-			}
-			break;
-	}
-	break;
-	default:
-		break;
-	}
-	return CWnd::PreTranslateMessage(pMsg);
-}*/
 
 
 

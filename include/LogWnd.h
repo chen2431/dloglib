@@ -14,21 +14,6 @@
 #endif
 #endif
 
-using namespace std;
-
-/** 记录信息定位的结构
- */
-struct INFO_IDX
-{
-	INFO_IDX():iInfoIdx(-1),iLineIdx(-1), pLogInfo(NULL){}
-
-	void Reset(){iInfoIdx = -1; iLineIdx=-1; pLogInfo=NULL;}
-
-	int iInfoIdx;		//!<which info
-	int iLineIdx;		//!<in this info , which line
-	CLogInfo*pLogInfo;	//!<pointer of CLogInfo(log information)
-};
-
 // 
 /** class CLogWnd
 */
@@ -64,9 +49,172 @@ public:
 	 */
 	void SetFormat(LPCSTR sFormat, int iDataType);
 
-	/** 日志显示
+	/** 设置时间显示类型
+	 * @param iTimeType: 0: year-month-day hour:minute:second 1: hour:minute:second 2:hour:minute:second.msec 3 year-month-day hour:minute:second.msec
 	 */
-	void LogInfo(LPCSTR sInfo, int iLogType, BYTE*pData=NULL, int len=0, int iDataType=0);
+	void SetTimeType(int iTimeType){ m_iTimeType = iTimeType;}
+
+	/** 调试日志输出
+	 * @param slog 日志内容
+	 */
+	void LogDebug(LPCSTR sLog);
+
+	/** 信息日志输出
+	 * @param slog 日志内容
+	 */
+	void LogInfo(LPCSTR sLog);
+
+	/** 警告日志输出
+	 * @param slog 日志内容
+	 */
+	void LogWarning(LPCSTR sLog);
+
+	/** 错误日志输出
+	 * @param slog 日志内容
+	 */
+	void LogError(LPCSTR sLog);
+
+	/** 致命错误日志输出
+	 * @param slog 日志内容
+	 */
+	void LogFatal(LPCSTR sLog);
+
+	/** 调试日志输出
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDebug(const char*pszFmt, ...);
+
+	/** 信息日志输出
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogInfo(const char*pszFmt, ...);
+
+
+	/** 警告日志输出
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogWarning(const char*pszFmt, ...);
+
+	/** 错误日志输出
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogError(const char*pszFmt, ...);
+
+	/** 致命错误日志输出
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogFatal(const char*pszFmt, ...);
+
+	/** 数据日志显示
+	 * @param iLogType 日志类型
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param sLog 日志内容
+	 * @param iDataType 数据类型
+	 */
+	void LogData(int iLogType, const BYTE*pData, int iDataLen, LPCSTR sLog, int iDataType=0);
+
+	/** 调试数据日志显示
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param iDataType 数据类型
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDataDebug(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
+
+	/** 信息数据日志显示
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param iDataType 数据类型
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDataInfo(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
+
+	/** 警告数据日志显示
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param iDataType 数据类型
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDataWarning(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
+
+
+	/** 错误数据日志显示
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param iDataType 数据类型
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDataError(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
+
+	/** 致命错误数据日志显示
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param iDataType 数据类型
+	 * @param pszFmt 日志内容
+	 * @param ...
+	 */
+	void LogDataFatal(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
+
+
+	/** 调试日志显示
+	 * @param sLog 日志内容
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void LogDebug(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
+	/** 信息日志显示
+	 * @param sLog 日志内容
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void LogInfo(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
+	/** 警告日志显示
+	 * @param sLog 日志内容
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void LogWarning(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
+	/** 错误日志显示
+	 * @param sLog 日志内容
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void LogError(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
+	/** 致命错误日志显示
+	 * @param sLog 日志内容
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void LogFatal(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
+	/** 日志显示
+	 * @param sLog 日志内容
+	 * @param iLogType 日志类型 0:调试 1:信息 2:警告 3:错误 4:致命错误 
+	 * @param pData 数据
+	 * @param iDataLen 数据长度 
+	 * @param iDataType 数据类型 
+	 */
+	void Log(LPCSTR sLog, int iLogType, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
+
 
 protected:
 	//!滚动控制
@@ -114,19 +262,24 @@ protected:
 
 	//////////////////////////////////////////////////////////////////////////
 	//!数据
-	list<CLogInfo*> m_listInfo;
+	std::list<CLogInfo*> m_listInfo;
 
 	//行数索引
-	vector<int> m_vLineCnt;
+	std::vector<int> m_vLineCnt;
 
 	//!当前显示的数据索引
-	vector<INFO_IDX> m_vInfoIdx;
+	std::vector<INFO_IDX> m_vInfoIdx;
 
 	//!当前鼠标选择的那条信息，那行
 	INFO_IDX m_infoSel;	
 
 	//!那行,显示中的那行
 	int m_iLineMemSel;
+
+	CWnd* m_pParentWnd;
+	UINT m_nResId;
+
+	int m_iTimeType;
 
 	void OnDraw(CDC*pDC);
 	void OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int idx);

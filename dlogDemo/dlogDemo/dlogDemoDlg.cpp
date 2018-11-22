@@ -50,6 +50,7 @@ END_MESSAGE_MAP()
 
 CdlogDemoDlg::CdlogDemoDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CdlogDemoDlg::IDD, pParent)
+	, m_bInit(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -65,6 +66,7 @@ BEGIN_MESSAGE_MAP(CdlogDemoDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CdlogDemoDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CdlogDemoDlg::OnBnClickedButton2)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -103,13 +105,12 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	CRect rc;//(0,0,500,400);
 	GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
 	ScreenToClient(rc);
-	//ClientToScreen(rc);
-
-	//GetClientRect(rc);
-	//rc.InflateRect(0, 0, 0, -100);
 
 	//m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
 	m_log.Create(rc, this, IDC_STATIC_LOG);
+	m_log.SetTimeType(1);
+
+	m_bInit = TRUE;
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -181,7 +182,7 @@ void CdlogDemoDlg::OnBnClickedButton1()
 
 	c++;
 
-	m_log.LogInfo(s, LOG_ERROR, data, 8192, DATA_DOUBLE);
+	m_log.LogDataInfo(data, 8192, DATA_DOUBLE, "data");
 }
 
 
@@ -194,4 +195,26 @@ void CdlogDemoDlg::OnBnClickedButton2()
 	i++;
 
 	m_log.LogInfo(s, LOG_INFO, NULL, 0);
+}
+
+
+void CdlogDemoDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+
+	// TODO: 在此处添加消息处理程序代码
+	if(m_bInit)
+	{
+		CRect rect;
+		GetClientRect(rect);
+		rect.InflateRect(-10, -10, -10, -100);
+		GetDlgItem(IDC_STATIC_LOG)->MoveWindow(rect);
+
+
+
+		CRect rc;
+		GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
+		ScreenToClient(rc);
+		m_log.MoveWindow(rc);
+	}
 }
