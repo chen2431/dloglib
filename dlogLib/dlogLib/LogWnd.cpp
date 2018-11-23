@@ -11,16 +11,17 @@ using namespace std;
 IMPLEMENT_DYNAMIC(CLogWnd, CWnd)
 
 CLogWnd::CLogWnd()
-: m_iLineCnt(0)
-, m_iLineHeight(20)
-, m_bScrollToEnd(true)
-, m_iFontSize(90)
-, m_colorBack(RGB(255,255,255))
-, m_colorLine(RGB(232,250,255))
-, m_colorSel(RGB(204,232,255))
-, m_bChange(false)
-, m_iTopPos(20000)
-, m_iTimeType(0)
+ : m_iLineCnt(0)
+ , m_iLineHeight(20)
+ , m_bScrollToEnd(true)
+ , m_iFontSize(90)
+ , m_colorBack(RGB(255,255,255))
+ , m_colorLine(RGB(232,250,255))
+ , m_colorSel(RGB(204,232,255))
+ , m_bChange(false)
+ , m_iTopPos(20000)
+ , m_iTimeType(0)
+ , m_bFileOpen(FALSE)
 {
 	m_scrollHelper = new CScrollHelper;
 	m_scrollHelper->AttachWnd(this);
@@ -64,6 +65,10 @@ CLogWnd::CLogWnd()
 CLogWnd::~CLogWnd()
 {
 	delete m_scrollHelper;
+	if(m_bFileOpen)
+	{
+		m_save.Close();
+	}
 }
 
 
@@ -487,7 +492,6 @@ void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 	m_iLineMemSel = posy/m_iLineHeight;
 	
 	// 
-
 	int cnt = m_vInfoIdx.size();
 	if(m_iLineMemSel<cnt)
 	{
@@ -710,7 +714,23 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 	m_listInfo.push_back(pLogInfo);
 
 	m_bChange = true;
-	
+
+	//is open
+	if(m_bFileOpen)
+	{
+		CString sLine;
+		pLogInfo->GetTypeStr(sLine);
+		m_save.WriteString(sLine);
+		m_save.WriteString("\n");
+
+		for(int i=0; i<pLogInfo->m_iLineOpenCnt; i++)
+		{
+			pLogInfo->GetLineStr(sLine, i);
+			m_save.WriteString(sLine);
+			m_save.WriteString("\n");
+		}
+		m_save.WriteString("\n");
+	}
 }
 
 void CLogWnd::pop()
@@ -779,3 +799,17 @@ void CLogWnd::PreSubclassWindow()
 	CWnd::PreSubclassWindow();
 }
 
+void CLogWnd::InitFile(LPCSTR sFileName)
+{
+	CString sLogFile;
+
+	SYSTEMTIME stm;
+	GetLocalTime(&stm);
+
+	sLogFile.Format("%s_%04d%02d%02d_%02d%02d%02d.log", sFileName, stm.wYear, stm.wMonth, stm.wDay, stm.wHour, stm.wMinute, stm.wSecond);
+
+	if(m_save.Open(sLogFile, CFile::modeCreate|CFile::modeWrite|CFile::shareDenyWrite))
+	{
+		m_bFileOpen = TRUE;
+	}
+}

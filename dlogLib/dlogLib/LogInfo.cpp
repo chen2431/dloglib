@@ -47,3 +47,10 @@ void CLogInfo::GetLineStr(CString&sLine, int iLineIdx)
 		GetLineDataStr(sLine, iLineIdx-1);
 	}
 }
+
+#include <string>
+void CLogInfo::GetTypeStr(CString&sType)
+{
+	static std::string s_stype[] = {"`[Debug]", "`[Info]", "`[Warning]", "`[Error]", "`[Fatal]"};
+	sType.Format(_T("%s"), s_stype[m_iLogType].c_str());
+}

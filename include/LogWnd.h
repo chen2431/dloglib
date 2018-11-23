@@ -30,6 +30,10 @@ public:
 	 */
 	BOOL Create(RECT& rect, CWnd* pParentWnd, UINT nID);
 
+	/**
+	*/
+	void InitFile(LPCSTR sFileName);
+
 	/** 设置每行显示数据参数
 	 * @param iLineDataCnt 每行显示数据的数量
 	 * @param sFormat 显示格式
@@ -279,7 +283,11 @@ protected:
 	CWnd* m_pParentWnd;
 	UINT m_nResId;
 
+	//!显示时间的类型
 	int m_iTimeType;
+
+	CStdioFile m_save;
+	BOOL m_bFileOpen;
 
 	void OnDraw(CDC*pDC);
 	void OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int idx);

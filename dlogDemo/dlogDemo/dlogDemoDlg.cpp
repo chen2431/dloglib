@@ -109,6 +109,7 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	//m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
 	m_log.Create(rc, this, IDC_STATIC_LOG);
 	m_log.SetTimeType(1);
+	m_log.InitFile("c:\\buaa\\log");
 
 	m_bInit = TRUE;
 
@@ -209,8 +210,6 @@ void CdlogDemoDlg::OnSize(UINT nType, int cx, int cy)
 		GetClientRect(rect);
 		rect.InflateRect(-10, -10, -10, -100);
 		GetDlgItem(IDC_STATIC_LOG)->MoveWindow(rect);
-
-
 
 		CRect rc;
 		GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);

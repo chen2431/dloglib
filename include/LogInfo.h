@@ -117,6 +117,9 @@ public:
 			m_iLineHexCntEx = m_iLineHexCnt*8;
 			break;
 		}
+
+		m_iLineOpenCnt = 1+m_iDataLen/m_iLineHexCntEx;
+		if(m_iDataLen%m_iLineHexCntEx) m_iLineOpenCnt++;
 	}
 
 	/** 设置数据是否被打开 when mouse left button down, call this function.
@@ -128,6 +131,10 @@ public:
 	 * @param iLineIdx:which line in this information
 	 */
 	void GetLineStr(CString&sLine, int iLineIdx);
+
+	/** 获得类型的字符串
+	*/
+	void GetTypeStr(CString&sType);
 
 	/** 获得显示状态，如果是数据获得数据是否打开
 	 * @return 返回显示状态
@@ -164,6 +171,9 @@ public:
 
 	//!行数
 	int m_iLineCnt;
+
+	//!打开数据的行数
+	int m_iLineOpenCnt;
 
 	//!是否是显示数据状态
 	bool m_bOpen;
