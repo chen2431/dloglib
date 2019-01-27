@@ -23,6 +23,8 @@ CLogWnd::CLogWnd()
  , m_iTimeType(0)
  , m_bFileOpen(FALSE)
 {
+	InitializeCriticalSection(&m_csLock);
+
 	m_scrollHelper = new CScrollHelper;
 	m_scrollHelper->AttachWnd(this);
 
@@ -69,6 +71,15 @@ CLogWnd::~CLogWnd()
 	{
 		m_save.Close();
 	}
+
+	list<CLogInfo*>::iterator it=m_listInfo.begin();
+	for(it; it!=m_listInfo.end(); ++it)
+	{
+		CLogInfo*pLogInfo = (*it);
+		delete pLogInfo;
+	}
+
+	DeleteCriticalSection(&m_csLock);
 }
 
 
@@ -197,7 +208,7 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
 	m_vInfoIdx.clear();
 	int iInfoCnt = m_vLineCnt.size();
 	int iBegIdx=0;
-	int iBegCnt;
+	int iBegCnt=0;
 	for(int i=0; i<iInfoCnt; i++)
 	{
 		if(m_vLineCnt[i]>iLineIdx)
@@ -349,7 +360,12 @@ void CLogWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	m_scrollHelper->OnHScroll(nSBCode, nPos, pScrollBar);
-	InvalidateRect(NULL);
+
+	CDC*pDC = GetDC();
+	OnDraw(pDC);
+	ReleaseDC(pDC);
+
+	//InvalidateRect(NULL);
 	//CWnd::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
@@ -706,6 +722,8 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 	pLogInfo->SetLineDataCnt(m_iLineHexCnt[iDataType]);
 	pLogInfo->SetFormat(m_sFormat[iDataType]);
 	
+	EnterCriticalSection(&m_csLock);
+
 	if(m_listInfo.size()>1000000)
 	{
 		pop();
@@ -714,6 +732,8 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 	m_listInfo.push_back(pLogInfo);
 
 	m_bChange = true;
+
+	LeaveCriticalSection(&m_csLock);
 
 	//is open
 	if(m_bFileOpen)
@@ -753,18 +773,17 @@ void CLogWnd::OnTimer(UINT_PTR nIDEvent)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	if(1001==nIDEvent)
 	{
+		EnterCriticalSection(&m_csLock);
 		if(m_bChange)
 		{
 			UpdateLine();
 			m_bChange = false;
 		}
+		LeaveCriticalSection(&m_csLock);
 	}
 
 	CWnd::OnTimer(nIDEvent);
 }
-
-
-
 
 BOOL CLogWnd::PreCreateWindow(CREATESTRUCT& cs)
 {

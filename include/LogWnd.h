@@ -289,6 +289,9 @@ protected:
 	CStdioFile m_save;
 	BOOL m_bFileOpen;
 
+	//发送数据的锁
+	CRITICAL_SECTION m_csLock;
+
 	void OnDraw(CDC*pDC);
 	void OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int idx);
 

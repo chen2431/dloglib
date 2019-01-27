@@ -11,6 +11,14 @@
 #define new DEBUG_NEW
 #endif
 
+BOOL CScanTh::SingleStep()
+{
+	if(m_pMainDlg!=NULL)
+	{
+		return m_pMainDlg->ScanThreadFunction();
+	}
+	return FALSE;
+}
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -51,6 +59,8 @@ END_MESSAGE_MAP()
 CdlogDemoDlg::CdlogDemoDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CdlogDemoDlg::IDD, pParent)
 	, m_bInit(FALSE)
+	, m_bRun(TRUE)
+	, m_pScanThread(NULL)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -67,6 +77,8 @@ BEGIN_MESSAGE_MAP(CdlogDemoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON1, &CdlogDemoDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CdlogDemoDlg::OnBnClickedButton2)
 	ON_WM_SIZE()
+	ON_WM_TIMER()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -112,6 +124,10 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	m_log.InitFile("c:\\buaa\\log");
 
 	m_bInit = TRUE;
+
+	SetTimer(1001, 1, NULL);
+
+	StartScanThread();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -216,4 +232,71 @@ void CdlogDemoDlg::OnSize(UINT nType, int cx, int cy)
 		ScreenToClient(rc);
 		m_log.MoveWindow(rc);
 	}
+}
+
+
+void CdlogDemoDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if(nIDEvent==1001)
+	{
+		//OnBnClickedButton1();
+	}
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+/*
+*/
+BOOL CdlogDemoDlg::ScanThreadFunction()
+{
+	OnBnClickedButton1();
+
+	Sleep(1);
+	return m_bRun;
+}
+
+/*! \brief start scan thread
+*/
+BOOL CdlogDemoDlg::StartScanThread()
+{
+	ASSERT(m_pScanThread==NULL);
+
+	m_pScanThread=new CScanTh(this);
+
+	if(m_pScanThread==NULL)
+	{
+		return FALSE;
+	}
+
+	if(!m_pScanThread->CreateThread())
+	{
+		delete m_pScanThread;
+		m_pScanThread=NULL;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+/*! \brief stop scan thread
+*/
+void CdlogDemoDlg::StopScanThread()
+{
+	m_bRun = FALSE;
+	if(m_pScanThread!=NULL)
+	{
+		m_pScanThread->KillThread(FALSE);
+		delete m_pScanThread;
+		m_pScanThread=NULL;
+	}
+}
+
+
+void CdlogDemoDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// TODO: 在此处添加消息处理程序代码
+	StopScanThread();
 }
