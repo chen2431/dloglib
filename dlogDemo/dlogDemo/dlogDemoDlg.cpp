@@ -68,6 +68,7 @@ CdlogDemoDlg::CdlogDemoDlg(CWnd* pParent /*=NULL*/)
 void CdlogDemoDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_CUSTOM_LOG, m_log);
 }
 
 BEGIN_MESSAGE_MAP(CdlogDemoDlg, CDialogEx)
@@ -79,6 +80,7 @@ BEGIN_MESSAGE_MAP(CdlogDemoDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
+	ON_WM_MOUSEMOVE()
 END_MESSAGE_MAP()
 
 
@@ -114,12 +116,13 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	CRect rc;//(0,0,500,400);
-	GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
-	ScreenToClient(rc);
+//	CRect rc;//(0,0,500,400);
+//	GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
+//	ScreenToClient(rc);
 
 	//m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
-	m_log.Create(rc, this, IDC_STATIC_LOG);
+	//m_log.Create(rc, this, IDC_STATIC_LOG);
+	//m_log.ModifyStyle(0, WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL);
 	m_log.SetTimeType(1);
 	m_log.InitFile("c:\\buaa\\log");
 
@@ -222,15 +225,15 @@ void CdlogDemoDlg::OnSize(UINT nType, int cx, int cy)
 	// TODO: 在此处添加消息处理程序代码
 	if(m_bInit)
 	{
-		CRect rect;
-		GetClientRect(rect);
-		rect.InflateRect(-10, -10, -10, -100);
-		GetDlgItem(IDC_STATIC_LOG)->MoveWindow(rect);
-
-		CRect rc;
-		GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
-		ScreenToClient(rc);
-		m_log.MoveWindow(rc);
+// 		CRect rect;
+// 		GetClientRect(rect);
+// 		rect.InflateRect(-10, -10, -10, -100);
+// 		GetDlgItem(IDC_STATIC_LOG)->MoveWindow(rect);
+// 
+// 		CRect rc;
+// 		GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
+// 		ScreenToClient(rc);
+// 		m_log.MoveWindow(rc);
 	}
 }
 
@@ -299,4 +302,12 @@ void CdlogDemoDlg::OnDestroy()
 
 	// TODO: 在此处添加消息处理程序代码
 	StopScanThread();
+}
+
+
+void CdlogDemoDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CDialogEx::OnMouseMove(nFlags, point);
 }

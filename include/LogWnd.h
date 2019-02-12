@@ -14,6 +14,8 @@
 #endif
 #endif
 
+#define LOGVIEWER_CLASSNAME    _T("MFCLogViewerCtrl")  // Window class name
+#define LOG_BUF_SIZE 8191
 // 
 /** class CLogWnd
 */
@@ -25,13 +27,12 @@ public:
 	CLogWnd();
 	virtual ~CLogWnd();
 
-	/** 
-	 *
+	/** 设置保存日志的文件
+	 * @param sFileName 日志的文件名
 	 */
-	BOOL Create(RECT& rect, CWnd* pParentWnd, UINT nID);
+	void InitFile(LPCSTR sFileName);
 
 	/**
-	*/
 	void InitFile(LPCSTR sFileName);
 
 	/** 设置每行显示数据参数
@@ -58,30 +59,7 @@ public:
 	 */
 	void SetTimeType(int iTimeType){ m_iTimeType = iTimeType;}
 
-	/** 调试日志输出
-	 * @param slog 日志内容
-	 */
-	void LogDebug(LPCSTR sLog);
 
-	/** 信息日志输出
-	 * @param slog 日志内容
-	 */
-	void LogInfo(LPCSTR sLog);
-
-	/** 警告日志输出
-	 * @param slog 日志内容
-	 */
-	void LogWarning(LPCSTR sLog);
-
-	/** 错误日志输出
-	 * @param slog 日志内容
-	 */
-	void LogError(LPCSTR sLog);
-
-	/** 致命错误日志输出
-	 * @param slog 日志内容
-	 */
-	void LogFatal(LPCSTR sLog);
 
 	/** 调试日志输出
 	 * @param pszFmt 日志内容
@@ -114,14 +92,7 @@ public:
 	 */
 	void LogFatal(const char*pszFmt, ...);
 
-	/** 数据日志显示
-	 * @param iLogType 日志类型
-	 * @param pData 数据
-	 * @param iDataLen 数据长度
-	 * @param sLog 日志内容
-	 * @param iDataType 数据类型
-	 */
-	void LogData(int iLogType, const BYTE*pData, int iDataLen, LPCSTR sLog, int iDataType=0);
+
 
 	/** 调试数据日志显示
 	 * @param pData 数据
@@ -170,6 +141,16 @@ public:
 	void LogDataFatal(const BYTE*pData, int iDataLen, int iDataType, const char*pszFmt, ...);
 
 
+	/** 数据日志显示
+	 * @param iLogType 日志类型
+	 * @param pData 数据
+	 * @param iDataLen 数据长度
+	 * @param sLog 日志内容
+	 * @param iDataType 数据类型
+	 */
+	void LogData(int iLogType, const BYTE*pData, int iDataLen, LPCSTR sLog, int iDataType=0);
+
+
 	/** 调试日志显示
 	 * @param sLog 日志内容
 	 * @param pData 数据
@@ -210,6 +191,7 @@ public:
 	 */
 	void LogFatal(LPCSTR sLog, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
 
+
 	/** 日志显示
 	 * @param sLog 日志内容
 	 * @param iLogType 日志类型 0:调试 1:信息 2:警告 3:错误 4:致命错误 
@@ -219,6 +201,15 @@ public:
 	 */
 	void Log(LPCSTR sLog, int iLogType, const BYTE*pData=NULL, int iDataLen=0, int iDataType=0);
 
+	/** 重载函数
+	*/
+	virtual BOOL Create(LPCTSTR lpszText, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID = 0xffff);
+
+private:
+
+	/**登记窗口
+	*/
+	BOOL CLogWnd::RegisterWindowClass();
 
 protected:
 	//!滚动控制
@@ -302,16 +293,14 @@ protected:
 protected:
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
+	//afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg void OnPaint();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual void PreSubclassWindow();
 };
 

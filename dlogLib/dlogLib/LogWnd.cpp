@@ -23,6 +23,8 @@ CLogWnd::CLogWnd()
  , m_iTimeType(0)
  , m_bFileOpen(FALSE)
 {
+	RegisterWindowClass();
+
 	InitializeCriticalSection(&m_csLock);
 
 	m_scrollHelper = new CScrollHelper;
@@ -80,48 +82,63 @@ CLogWnd::~CLogWnd()
 	}
 
 	DeleteCriticalSection(&m_csLock);
+	DestroyWindow();
 }
 
-
-BEGIN_MESSAGE_MAP(CLogWnd, CWnd)
-	ON_WM_MOUSEACTIVATE()
-	ON_WM_PAINT()
-	ON_WM_HSCROLL()
-	ON_WM_VSCROLL()
-	ON_WM_MOUSEWHEEL()
-	ON_WM_SIZE()
-	ON_WM_LBUTTONDOWN()
-	ON_WM_CREATE()
-	ON_WM_TIMER()
-END_MESSAGE_MAP()
-
-
-BOOL CLogWnd::Create(RECT& rect, CWnd* pParentWnd, UINT nID)
+BOOL CLogWnd::RegisterWindowClass()
 {
-	CRect rc;
+	WNDCLASS wndcls;
+	HINSTANCE hInst = AfxGetInstanceHandle();
 
-	CWnd*pWnd = pParentWnd->GetDlgItem(nID);
-	if(pWnd)
+	if (!(::GetClassInfo(hInst, LOGVIEWER_CLASSNAME, &wndcls)))
 	{
-		pWnd->GetWindowRect(rc);
-		pParentWnd->ScreenToClient(rc);
+		// otherwise we need to register a new class
+		wndcls.style            = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+		wndcls.lpfnWndProc      = ::DefWindowProc;
+		wndcls.cbClsExtra       = wndcls.cbWndExtra = 0;
+		wndcls.hInstance        = hInst;
+		wndcls.hIcon            = NULL;
+		wndcls.hCursor          = AfxGetApp()->LoadStandardCursor(IDC_ARROW);
+		wndcls.hbrBackground    = (HBRUSH) (COLOR_3DFACE + 1);
+		wndcls.lpszMenuName     = NULL;
+		wndcls.lpszClassName    = LOGVIEWER_CLASSNAME;
 
-		return CWnd::Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, pParentWnd, nID);
+		if (!AfxRegisterClass(&wndcls))
+		{
+			AfxThrowResourceException();
+			return FALSE;
+		}
 	}
 
-	return CWnd::Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rect, pParentWnd, nID);
+	return TRUE;
 }
 
-// CLogWnd 消息处理程序
-int CLogWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
+void CLogWnd::InitFile(LPCSTR sFileName)
 {
-	if (CWnd::OnCreate(lpCreateStruct) == -1)
-		return -1;
+	CString sLogFile;
 
-	// TODO:  在此添加您专用的创建代码
+	SYSTEMTIME stm;
+	GetLocalTime(&stm);
+
+	sLogFile.Format("%s_%04d%02d%02d_%02d%02d%02d.log", sFileName, stm.wYear, stm.wMonth, stm.wDay, stm.wHour, stm.wMinute, stm.wSecond);
+
+	if(m_save.Open(sLogFile, CFile::modeCreate|CFile::modeWrite|CFile::shareDenyWrite))
+	{
+		m_bFileOpen = TRUE;
+	}
+}
+
+BOOL CLogWnd::Create(LPCTSTR lpszText, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+{
+	BOOL bSucc = CWnd::Create(LOGVIEWER_CLASSNAME, lpszText, dwStyle, rect, pParentWnd, nID);
 
 	ModifyStyle(0, WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL);
 
+	return bSucc;
+}
+
+void CLogWnd::PreSubclassWindow()
+{
 	for(int i=0; i<8; i++)
 	{
 		BOOL rlt = m_bmpMark[i].LoadBitmap(IDB_MARK_1+i);
@@ -133,20 +150,22 @@ int CLogWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_bmpState[CLogInfo::STATE_NONE].LoadBitmap(IDB_NONE);
 
 	SetTimer(1001, 100, NULL);
-
-	return 0;
 }
 
 
+BEGIN_MESSAGE_MAP(CLogWnd, CWnd)
+	//ON_WM_MOUSEACTIVATE()
+	ON_WM_PAINT()
+	ON_WM_HSCROLL()
+	ON_WM_VSCROLL()
+	ON_WM_MOUSEWHEEL()
+	ON_WM_SIZE()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_TIMER()
+END_MESSAGE_MAP()
 
-int CLogWnd::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
-{
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
 
-	return CWnd::OnMouseActivate(pDesktopWnd, nHitTest, message);
-}
-
-
+// CLogWnd 消息处理程序
 void CLogWnd::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
@@ -534,28 +553,6 @@ void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDown(nFlags, point);
 }
 
-void CLogWnd::LogDebug(LPCSTR sLog)
-{
-	Log(sLog, LOG_DEBUG);
-}
-void CLogWnd::LogInfo(LPCSTR sLog)
-{
-	Log(sLog, LOG_INFO);
-}
-void CLogWnd::LogWarning(LPCSTR sLog)
-{
-	Log(sLog, LOG_WARN);
-}
-void CLogWnd::LogError(LPCSTR sLog)
-{
-	Log(sLog, LOG_ERROR);
-}
-void CLogWnd::LogFatal(LPCSTR sLog)
-{
-	Log(sLog, LOG_FATAL);
-}
-
-#define LOG_BUF_SIZE 8191
 
 void CLogWnd::LogDebug(const char*pszFmt, ...)
 {
@@ -785,50 +782,7 @@ void CLogWnd::OnTimer(UINT_PTR nIDEvent)
 	CWnd::OnTimer(nIDEvent);
 }
 
-BOOL CLogWnd::PreCreateWindow(CREATESTRUCT& cs)
-{
-	// TODO: 在此添加专用代码和/或调用基类
-	WNDCLASS wndcls;
-	memset(&wndcls, 0, sizeof(WNDCLASS));
-
-	wndcls.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW | CS_NOCLOSE;
-	wndcls.lpfnWndProc = ::DefWindowProc; 
-	wndcls.hInstance = AfxGetInstanceHandle();
-	wndcls.hIcon =  NULL; 
-	wndcls.hCursor =NULL;
-	wndcls.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
-	wndcls.lpszMenuName = NULL;
-	wndcls.lpszClassName = _T("LineWnd");
-	if(!AfxRegisterClass(&wndcls))
-	{
-		TRACE("Class Registration Failed!\n");
-		return FALSE;
-	}
-	cs.lpszClass = wndcls.lpszClassName;
 
 
-	return CWnd::PreCreateWindow(cs);
-}
 
 
-void CLogWnd::PreSubclassWindow()
-{
-	// TODO: 在此添加专用代码和/或调用基类
-
-	CWnd::PreSubclassWindow();
-}
-
-void CLogWnd::InitFile(LPCSTR sFileName)
-{
-	CString sLogFile;
-
-	SYSTEMTIME stm;
-	GetLocalTime(&stm);
-
-	sLogFile.Format("%s_%04d%02d%02d_%02d%02d%02d.log", sFileName, stm.wYear, stm.wMonth, stm.wDay, stm.wHour, stm.wMinute, stm.wSecond);
-
-	if(m_save.Open(sLogFile, CFile::modeCreate|CFile::modeWrite|CFile::shareDenyWrite))
-	{
-		m_bFileOpen = TRUE;
-	}
-}
