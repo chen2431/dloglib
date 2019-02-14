@@ -235,6 +235,9 @@ void CLogWnd::PreSubclassWindow()
 	m_bmpState[CLogInfo::STATE_CLOSE].LoadBitmap(IDB_CLOSE);
 	m_bmpState[CLogInfo::STATE_NONE].LoadBitmap(IDB_NONE);
 
+
+	m_menu.LoadMenu(IDR_MENU1);
+
 	SetTimer(1001, 100, NULL);
 }
 
@@ -247,7 +250,10 @@ BEGIN_MESSAGE_MAP(CLogWnd, CWnd)
 	ON_WM_MOUSEWHEEL()
 	ON_WM_SIZE()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_RBUTTONDOWN()
 	ON_WM_TIMER()
+	ON_COMMAND(ID_MENU_BOTTOM, &CLogWnd::OnMenuBottom)
+	ON_COMMAND(ID_MENU_CLEAR, &CLogWnd::OnMenuClear)
 END_MESSAGE_MAP()
 
 
@@ -380,7 +386,6 @@ void CLogWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	m_scrollHelper->OnVScroll(nSBCode, nPos, pScrollBar);
-
 
 	{//此部分代码，决定是否进入底部状态
 		CRect rc;
@@ -634,6 +639,49 @@ void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDown(nFlags, point);
 }
 
+void CLogWnd::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	CMenu*pPopup = m_menu.GetSubMenu(0);
+
+	if(pPopup)
+	{
+		CPoint cursorPos;
+		cursorPos.x= GetCurrentMessage()->pt.x;
+		cursorPos.y= GetCurrentMessage()->pt.y;
+		pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, cursorPos.x, cursorPos.y, this, NULL);
+	}
+
+	CWnd::OnRButtonDown(nFlags, point);
+}
+
+void CLogWnd::OnMenuBottom()
+{
+	m_bScrollToEnd = true;
+//	m_bChange = true;
+}
+
+void CLogWnd::OnMenuClear()
+{
+	EnterCriticalSection(&m_csLock);
+
+	list<CLogInfo*>::iterator it=m_listInfo.begin();
+	for(it; it!=m_listInfo.end(); ++it)
+	{
+		CLogInfo*pLogInfo = (*it);
+
+		if(pLogInfo)
+		{
+			delete pLogInfo;
+			pLogInfo = NULL;
+		}
+	}
+	m_listInfo.clear();
+
+	m_iInfoShowCnt = 0;
+
+	m_bChange = true;
+	LeaveCriticalSection(&m_csLock);
+}
 
 inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iDataLen, int iDataType)
 {
@@ -659,8 +707,6 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 
 	m_listInfo.push_back(pLogInfo);
 
-	LeaveCriticalSection(&m_csLock);
-
 	m_bChange = true;
 
 	//is open
@@ -679,6 +725,8 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 		}
 		m_save.WriteString("\n");
 	}
+
+	LeaveCriticalSection(&m_csLock);
 }
 
 

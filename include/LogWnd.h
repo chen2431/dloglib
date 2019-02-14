@@ -237,6 +237,8 @@ protected:
 	//!显示时间的类型
 	int m_iTimeType;
 
+	CMenu m_menu;		//!< menu for edit chart parameter
+
 protected:
 
 	//////////////////////////////////////////////////////////////////////////
@@ -355,7 +357,10 @@ public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnMenuBottom();
+	afx_msg void OnMenuClear();
 	virtual void PreSubclassWindow();
 };
 
