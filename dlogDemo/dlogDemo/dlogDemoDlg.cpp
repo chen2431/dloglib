@@ -77,7 +77,6 @@ BEGIN_MESSAGE_MAP(CdlogDemoDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CdlogDemoDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CdlogDemoDlg::OnBnClickedButton2)
-	ON_WM_SIZE()
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
 	ON_WM_MOUSEMOVE()
@@ -110,21 +109,14 @@ BOOL CdlogDemoDlg::OnInitDialog()
 		}
 	}
 
-	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
+	// 设置此对话框的图标。当应用程序主窗口不话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-//	CRect rc;//(0,0,500,400);
-//	GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
-//	ScreenToClient(rc);
-
-	//m_log.Create(NULL, "CLogWnd", WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL, rc, this, 1000);
-	//m_log.Create(rc, this, IDC_STATIC_LOG);
-	//m_log.ModifyStyle(0, WS_CHILD | WS_VISIBLE |WS_HSCROLL | WS_VSCROLL);
 	m_log.SetTimeType(1);
-	m_log.InitFile("c:\\buaa\\log");
+	m_log.InitFile("c:\\buaax");
 
 	m_bInit = TRUE;
 
@@ -215,26 +207,6 @@ void CdlogDemoDlg::OnBnClickedButton2()
 	i++;
 
 	m_log.LogInfo(s, LOG_INFO, NULL, 0);
-}
-
-
-void CdlogDemoDlg::OnSize(UINT nType, int cx, int cy)
-{
-	CDialogEx::OnSize(nType, cx, cy);
-
-	// TODO: 在此处添加消息处理程序代码
-	if(m_bInit)
-	{
-// 		CRect rect;
-// 		GetClientRect(rect);
-// 		rect.InflateRect(-10, -10, -10, -100);
-// 		GetDlgItem(IDC_STATIC_LOG)->MoveWindow(rect);
-// 
-// 		CRect rc;
-// 		GetDlgItem(IDC_STATIC_LOG)->GetWindowRect(rc);
-// 		ScreenToClient(rc);
-// 		m_log.MoveWindow(rc);
-	}
 }
 
 

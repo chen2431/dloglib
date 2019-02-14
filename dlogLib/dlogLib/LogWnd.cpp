@@ -11,17 +11,24 @@ using namespace std;
 IMPLEMENT_DYNAMIC(CLogWnd, CWnd)
 
 CLogWnd::CLogWnd()
- : m_iLineCnt(0)
+ : m_iAllLineCnt(0)
  , m_iLineHeight(20)
  , m_bScrollToEnd(true)
  , m_iFontSize(90)
  , m_colorBack(RGB(255,255,255))
  , m_colorLine(RGB(232,250,255))
  , m_colorSel(RGB(204,232,255))
- , m_bChange(false)
+ , m_bChange(true)
  , m_iTopPos(20000)
  , m_iTimeType(0)
  , m_bFileOpen(FALSE)
+ , m_rtMem(0,0,0,0)
+ , m_iInfoCnt(0)
+ , m_iFirstShowLineIdx(0)
+ , m_iInfoShowCnt(0)
+ , m_iInfoID(0)
+ , m_plineCnt(NULL)
+ , m_infoShow(NULL)
 {
 	RegisterWindowClass();
 
@@ -64,6 +71,9 @@ CLogWnd::CLogWnd()
 	m_iLineHexCnt[DATA_FLOATB]	= 8;
 	m_iLineHexCnt[DATA_DOUBLE]	= 4;
 	m_iLineHexCnt[DATA_DOUBLEB] = 4;
+
+	m_plineCnt = new UINT[MAX_INFO_CNT];
+	m_infoShow = new INFO_SHOW[MAX_SHOW_CNT];
 }
 
 CLogWnd::~CLogWnd()
@@ -74,12 +84,17 @@ CLogWnd::~CLogWnd()
 		m_save.Close();
 	}
 
+	EnterCriticalSection(&m_csLock);
 	list<CLogInfo*>::iterator it=m_listInfo.begin();
 	for(it; it!=m_listInfo.end(); ++it)
 	{
 		CLogInfo*pLogInfo = (*it);
 		delete pLogInfo;
 	}
+	LeaveCriticalSection(&m_csLock);
+
+	if(m_plineCnt) delete [] m_plineCnt;
+	if(m_infoShow) delete [] m_infoShow;
 
 	DeleteCriticalSection(&m_csLock);
 	DestroyWindow();
@@ -113,14 +128,85 @@ BOOL CLogWnd::RegisterWindowClass()
 	return TRUE;
 }
 
-void CLogWnd::InitFile(LPCSTR sFileName)
+BOOL CLogWnd::CreateMultiLevelDirectory(const CString dd)
 {
+	HANDLE fFile;             // File Handle
+	WIN32_FIND_DATA fileinfo; // File Information Structure
+	CStringArray m_arr;       // CString Array to hold Directory Structures
+	BOOL tt;                  // BOOL used to test if Create Directory was successful
+	int x1 = 0;               // Counter
+	CString tem = "";         // Temporary CString Object
+
+	//Before we go to a lot of work. Check to see if the Directory exists
+	fFile = FindFirstFile(dd,&fileinfo);
+	// if the file exists and it is a directory
+	if(fileinfo.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+	{
+		// Directory Exists close file and return
+		FindClose(fFile);
+		return TRUE;
+	}
+
+	m_arr.RemoveAll(); // Not really necessary - Just habit
+	//Separate the String into its compounded components
+	for(x1 = 0; x1 < dd.GetLength(); x1++ ) // Parse the supplied CString Directory String
+	{ 
+		if(dd.GetAt(x1) != '\\') // if the Charachter is not a 
+			tem += dd.GetAt(x1); // add the character to the Temp String
+		else
+		{
+			m_arr.Add(tem); // if the Character is a \ 
+			//Add the Temp String to the CString Array
+			tem += "\\"; // Now add the \ to the temp string
+		}
+
+		if(x1 == dd.GetLength()-1) // If we reached the end of the String
+			m_arr.Add(tem);   //add the remaining string
+	}
+	// Close the file
+	FindClose(fFile);
+
+	//Create each level of the Directory Structure
+	// Now lets cycle through the String Array and create each directory in turn
+	for(x1 = 1; x1 < m_arr.GetSize(); x1++)
+	{
+		tem = m_arr.GetAt(x1);
+		tt = CreateDirectory(tem,NULL);
+		// If the Directory exists it will return a false
+		if(tt)
+			SetFileAttributes(tem,FILE_ATTRIBUTE_NORMAL);
+		// If we were successful we set the attributes to normal
+	}
+
+	// Now lets see if the directory was successfully created
+	fFile = FindFirstFile(dd,&fileinfo);
+	//Check to see if the Directory was created and it actually is a Directory
+	m_arr.RemoveAll();
+	if(fileinfo.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+	{
+		// Directory Exists close file and return
+		FindClose(fFile);
+		return TRUE;
+	}
+	else
+	{
+		// For Some reason the Function Failed Return FALSE
+		FindClose(fFile);
+		return FALSE;
+	}
+}
+
+
+void CLogWnd::InitFile(LPCSTR sPath, LPCSTR sPrefix)
+{
+	CreateMultiLevelDirectory(sPath);
+
 	CString sLogFile;
 
 	SYSTEMTIME stm;
 	GetLocalTime(&stm);
 
-	sLogFile.Format("%s_%04d%02d%02d_%02d%02d%02d.log", sFileName, stm.wYear, stm.wMonth, stm.wDay, stm.wHour, stm.wMinute, stm.wSecond);
+	sLogFile.Format("%s\\%s_%04d%02d%02d_%02d%02d%02d.log", sPath, sPrefix, stm.wYear, stm.wMonth, stm.wDay, stm.wHour, stm.wMinute, stm.wSecond);
 
 	if(m_save.Open(sLogFile, CFile::modeCreate|CFile::modeWrite|CFile::shareDenyWrite))
 	{
@@ -174,217 +260,119 @@ void CLogWnd::OnPaint()
 
 void CLogWnd::OnDraw(CDC*pDC)
 {
-	//当前滚动条的位置
-	CSize pos = m_scrollHelper->GetScrollPos();
-
-	//X轴方向的起始位置
-	int iOffsetX = pos.cx;
-
-	//当前应该显示那条记录
-	int iLineIdx = pos.cy/m_iLineHeight;
-
-	//Y轴方向的起始位置
-	int iOffsetY = pos.cy%m_iLineHeight;
-
-	//实际的显示区域
-	CRect rtClient;
-	GetClientRect(rtClient);
-
-	//可以显示的条目数量
-	int iLineCnt  = rtClient.Height()/m_iLineHeight;
-	if(rtClient.Height()%m_iLineHeight) iLineCnt+=2;	//多显示两条，由于上边半条，下边半条
-
-	//申请内存中区域的大小memory rect
-	CRect rect(0, 0, rtClient.Width(), iLineCnt*m_iLineHeight);
-
-
 	CDC memoryDC;
-	if ( rect.Width() > 0 && rect.Height() > 0 &&
+	if ( m_rtMem.Width() > 0 && m_rtMem.Height() > 0 &&
 		memoryDC.CreateCompatibleDC(pDC) )
 	{
 		CBitmap bitmap;
-		if ( bitmap.CreateCompatibleBitmap(pDC, rect.Width(), rect.Height()) )
+		if ( bitmap.CreateCompatibleBitmap(pDC, m_rtMem.Width(), m_rtMem.Height()) )
 		{
 			CDC* pMemDC = &memoryDC;
 			// Select bitmap into memory DC.
 			CBitmap* pOldBitmap = pMemDC->SelectObject(&bitmap);
 
-			//
-			OnDrawMem(pMemDC, rect, iLineCnt, iLineIdx);
+			// draw in memory
+			OnDrawMem(pMemDC, m_rtMem);
 
 			// Do the bitblt.
-			pDC->BitBlt(0, 0, rtClient.Width(), rtClient.Height(),
-				pMemDC, iOffsetX, iOffsetY, SRCCOPY);
+			pDC->BitBlt(0, 0, m_rtClient.Width(), m_rtClient.Height(),
+				pMemDC, m_iOffsetX, m_iOffsetY, SRCCOPY);
 
 			pMemDC->SelectObject(pOldBitmap);
 		}
 	}
 }
 
-void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int iLineIdx)
+void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 {
-	//当前显示什么内容
-	m_vInfoIdx.clear();
-	int iInfoCnt = m_vLineCnt.size();
-	int iBegIdx=0;
-	int iBegCnt=0;
-	for(int i=0; i<iInfoCnt; i++)
-	{
-		if(m_vLineCnt[i]>iLineIdx)
-		{
-			iBegIdx = i;
-			iBegCnt = m_vLineCnt[i]-iLineIdx;
-			break;
-		}
-	}
-
-	int i=0;
-	list<CLogInfo*>::iterator it=m_listInfo.begin();
-	for(it; it!=m_listInfo.end(); ++it)
-	{
-		if(i==iBegIdx)
-		{
-			CLogInfo*pLogInfo = (*it);
-			for(int j=0; j<iBegCnt; j++)
-			{
-				INFO_IDX ii;
-				ii.pLogInfo = pLogInfo;
-				ii.iInfoIdx = iBegIdx;
-				ii.iLineIdx = pLogInfo->m_iLineCnt-iBegCnt+j;
-				m_vInfoIdx.push_back(ii);
-			}
-		}
-
-		if(i>iBegIdx)
-		{
-			CLogInfo*pLogInfo = (*it);
-			for(int j=0; j<pLogInfo->m_iLineCnt; j++)
-			{
-				INFO_IDX ii;
-				ii.pLogInfo = pLogInfo;
-				ii.iInfoIdx = i;
-				ii.iLineIdx = j;
-				m_vInfoIdx.push_back(ii);
-			}
-		}
-
-		if(m_vInfoIdx.size()>=(UINT)iShowLineCnt)
-		{
-			break;
-		}
-
-		i++;
-	}
-
 	//背景
 	pDC->FillSolidRect(rect, m_colorBack);
 
 	//按照每行画图
-	for(int i=0; i<iShowLineCnt; i++)
+	for(UINT i=0; i<m_iInfoShowCnt; i++)
 	{
 		CRect rcLine(0, i*m_iLineHeight, rect.Width(), (i+1)*m_iLineHeight);
-		
+
 		CRect rcMark = rcLine; rcMark.right = rcMark.left+20;
 		CRect rcState = rcLine;rcState.left = rcMark.right; rcState.right = rcState.left+20;
 		CRect rcTxt = rcLine; rcTxt.left = rcState.right;
 
-		if(i<(int)m_vInfoIdx.size())
+		//鼠标选择的信息或者行
+		if(m_infoShow[i].iInfoID==m_infoSel.iInfoID)
 		{
-			CLogInfo*pLogInfo = m_vInfoIdx[i].pLogInfo;
-
-			//鼠标选择的信息或者行
-			if(m_vInfoIdx[i].iInfoIdx==m_infoSel.iInfoIdx)
-			{
-				if(m_infoSel.iLineIdx==0)
-				{//显示多行
-					pDC->FillSolidRect(rcTxt, m_colorSel);
-				}
-				else if(m_infoSel.iLineIdx==m_vInfoIdx[i].iLineIdx)
-				{//显示单行
-					pDC->FillSolidRect(rcTxt, m_colorSel);
-				}
+			if(m_infoSel.iLineIdx==0)
+			{//显示多行
+				pDC->FillSolidRect(rcTxt, m_colorSel);
 			}
-			
-
-			if(m_vInfoIdx[i].iLineIdx==0)
-			{
-				//bitmap of mark
-				{
-					CDC memDC;
-					memDC.CreateCompatibleDC(pDC);
-					CBitmap*pOld = memDC.SelectObject(&m_bmpMark[pLogInfo->m_iLogType]);
-					pDC->TransparentBlt(rcMark.left+2, rcMark.top+2, 16, 16, &memDC, 0, 0, 16,16, 0xFFFFFF);
-					memDC.SelectObject(pOld);
-				}
-
-				//bitmao of state
-				int iShowState = m_vInfoIdx[i].pLogInfo->GetShowState();
-				if(iShowState<CLogInfo::STATE_CNT)
-				{
-					CDC memDC;
-					memDC.CreateCompatibleDC(pDC);
-					CBitmap*pOld = memDC.SelectObject(&m_bmpState[iShowState]);
-					pDC->TransparentBlt(rcState.left+2, rcState.top+2, 16, 16, &memDC, 0, 0, 16,16, 0xFFFFFF);
-					memDC.SelectObject(pOld);
-				}
-				//else
-				//{
-				//	rcTxt.left = rcMark.right+4; 
-				//}
-
-				
-				CPen pen;
-
-				pen.CreatePen(PS_SOLID, 1, m_colorLine);
-
-				CPen*pOldPen = pDC->SelectObject(&pen);
-
-				pDC->MoveTo(rcLine.left, rcLine.top);
-				pDC->LineTo(rcLine.right, rcLine.top);
-				pDC->SelectObject(pOldPen);
+			else if(m_infoSel.iLineIdx==m_infoShow[i].iLineIdx)
+			{//显示单行
+				pDC->FillSolidRect(rcTxt, m_colorSel);
 			}
-			
-			int old = pDC->SetBkMode(TRANSPARENT);
-			COLORREF colorOld = pDC->SetTextColor(m_colorFont[pLogInfo->m_iLogType]);
-
-			CFont font;
-
-			if(m_vInfoIdx[i].iLineIdx==0)
-			{
-				font.CreatePointFont(m_iFontSize, "微软雅黑");
-			}
-			else
-			{
-				//font.CreatePointFont(m_iFontSize+10, "courier new");
-				font.CreatePointFont(m_iFontSize+10, "宋体");
-			}
-			
-			CFont*pOldFont = pDC->SelectObject(&font);
-
-			CString s;
-			m_vInfoIdx[i].pLogInfo->GetLineStr(s, m_vInfoIdx[i].iLineIdx);
-
-
-			pDC->DrawText(s, rcTxt, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
-
-			pDC->SelectObject(pOldFont);
-
-			pDC->SetTextColor(colorOld);
-			pDC->SetBkMode(old);
 		}
+
+
+		if(m_infoShow[i].iLineIdx==0)
+		{
+			//bitmap of mark
+			{
+				CDC memDC;
+				memDC.CreateCompatibleDC(pDC);
+				CBitmap*pOld = memDC.SelectObject(&m_bmpMark[m_infoShow[i].iLogType]);
+				pDC->TransparentBlt(rcMark.left+2, rcMark.top+2, 16, 16, &memDC, 0, 0, 16,16, 0xFFFFFF);
+				memDC.SelectObject(pOld);
+			}
+
+			//bitmap of state
+			int iShowState = m_infoShow[i].iShowState;
+			if(iShowState<CLogInfo::STATE_CNT)
+			{
+				CDC memDC;
+				memDC.CreateCompatibleDC(pDC);
+				CBitmap*pOld = memDC.SelectObject(&m_bmpState[iShowState]);
+				pDC->TransparentBlt(rcState.left+2, rcState.top+2, 16, 16, &memDC, 0, 0, 16,16, 0xFFFFFF);
+				memDC.SelectObject(pOld);
+			}
+
+			CPen pen;
+			pen.CreatePen(PS_SOLID, 1, m_colorLine);
+			CPen*pOldPen = pDC->SelectObject(&pen);
+			pDC->MoveTo(rcLine.left, rcLine.top);
+			pDC->LineTo(rcLine.right, rcLine.top);
+			pDC->SelectObject(pOldPen);
+		}
+
+		int old = pDC->SetBkMode(TRANSPARENT);
+		COLORREF colorOld = pDC->SetTextColor(m_colorFont[m_infoShow[i].iLogType]);
+
+		CFont font;
+		if(m_infoShow[i].iLineIdx==0)
+		{
+			font.CreatePointFont(m_iFontSize, "微软雅黑");
+		}
+		else
+		{
+			//font.CreatePointFont(m_iFontSize+10, "courier new");
+			font.CreatePointFont(m_iFontSize+10, "宋体");
+    	}
+
+		CFont*pOldFont = pDC->SelectObject(&font);
+
+		pDC->DrawText(m_infoShow[i].szLine, rcTxt, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+		pDC->SelectObject(pOldFont);
+		pDC->SetTextColor(colorOld);
+		pDC->SetBkMode(old);
 	}
 }
+
+
 
 void CLogWnd::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	m_scrollHelper->OnHScroll(nSBCode, nPos, pScrollBar);
 
-	CDC*pDC = GetDC();
-	OnDraw(pDC);
-	ReleaseDC(pDC);
+	m_bChange = true;
 
-	//InvalidateRect(NULL);
 	//CWnd::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
@@ -420,8 +408,8 @@ void CLogWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		m_iTopPos = dis;
 	}
 
+	m_bChange = true;
 
-	InvalidateRect(NULL);
 	//CWnd::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
@@ -429,8 +417,8 @@ BOOL CLogWnd::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	BOOL wasScrolled = m_scrollHelper->OnMouseWheel(nFlags, zDelta, pt);
-	
-	InvalidateRect(NULL);
+
+	m_bChange = true;
 
 	return wasScrolled;
 }
@@ -453,14 +441,15 @@ void CLogWnd::OnSize(UINT nType, int cx, int cy)
 		}
 	}
 
-	UpdateLineCnt();
-
 	m_scrollHelper->OnSize(nType, cx, cy);
+
+	m_bChange = true;
 }
 
-void CLogWnd::UpdateLineCnt()
+void CLogWnd::UpdateDisplayHeight()
 {
-	int iDisplayHeight = m_iLineCnt*m_iLineHeight;
+	//需要显示的总高度
+	int iDisplayHeight = m_iAllLineCnt*m_iLineHeight;
 
 	//当前显示的大小
 	CSize sz = m_scrollHelper->GetDisplaySize();
@@ -477,37 +466,126 @@ void CLogWnd::UpdateLineCnt()
 	m_scrollHelper->SetDisplaySize(sz.cx, iDisplayHeight);
 }
 
-void CLogWnd::UpdateLine()
+void CLogWnd::CalculateShowLineCnt()
 {
-	int iSize = m_listInfo.size();
-	m_vLineCnt.resize(iSize);
+	//当前滚动条的位置
+	CSize pos = m_scrollHelper->GetScrollPos();
 
-	m_iLineCnt = 0;
+	//X轴方向的起始位置
+	m_iOffsetX = pos.cx;
+
+	//当前应该显示那行记录
+	m_iFirstShowLineIdx = pos.cy/m_iLineHeight;
+
+	//Y轴方向的起始位置
+	m_iOffsetY = pos.cy%m_iLineHeight;
+
+	//实际的显示区域
+	GetClientRect(m_rtClient);
+
+	//可以显示的条目数量
+	m_iShowLineCnt  = m_rtClient.Height()/m_iLineHeight;
+	if(m_rtClient.Height()%m_iLineHeight) m_iShowLineCnt+=2;	//多显示两条，由于上边半条，下边半条
+
+	//申请内存中区域的大小memory rect
+	m_rtMem.right = m_rtClient.Width();
+	m_rtMem.bottom = m_iShowLineCnt*m_iLineHeight;
+}
+
+void CLogWnd::CalculateLineCnt()
+{
+	m_iInfoCnt = m_listInfo.size();
+
+	m_iAllLineCnt = 0;
 	int i=0;
 	list<CLogInfo*>::iterator it = m_listInfo.begin();
 	for(it; it!=m_listInfo.end(); ++it)
 	{
-		m_iLineCnt+=(*it)->m_iLineCnt;
-
-		m_vLineCnt[i] = m_iLineCnt;
+		m_iAllLineCnt+=(*it)->m_iLineCnt;
+		m_plineCnt[i] = m_iAllLineCnt;
 
 		i++;
 	}
+}
 
-	UpdateLineCnt();
+void CLogWnd::PickShowInfo(UINT iShowLineCnt, UINT iLineIdx)
+{
+	m_iInfoShowCnt=0;
 
-	if(m_bScrollToEnd)
+	int iBegIdx=0;	//开始是那个 info
+	int iBegCnt=0;	//在这个info 中前面几个不是
+	for(UINT i=0; i<m_iInfoCnt; i++)
 	{
-		m_scrollHelper->ScrollToEnd();
+		if(m_plineCnt[i]>iLineIdx)
+		{
+			iBegIdx = i;
+			iBegCnt = m_plineCnt[i]-iLineIdx;
+			break;
+		}
 	}
 
-	InvalidateRect(NULL);
+	int i=0;
+	list<CLogInfo*>::iterator it=m_listInfo.begin();
+	for(it; it!=m_listInfo.end(); ++it)
+	{
+		if(i==iBegIdx)
+		{
+			CLogInfo*pLogInfo = (*it);
+			for(int j=0; j<iBegCnt; j++)
+			{
+				int iLineInnerIdx = pLogInfo->m_iLineCnt-iBegCnt+j;
+
+				m_infoShow[m_iInfoShowCnt].pLogInfo = pLogInfo;
+
+				m_infoShow[m_iInfoShowCnt].iInfoID = pLogInfo->m_iInfoID;
+			//	m_infoShow[m_iInfoShowCnt].iInfoIdx = iBegIdx;
+				m_infoShow[m_iInfoShowCnt].iLineIdx = iLineInnerIdx;
+				m_infoShow[m_iInfoShowCnt].iLogType = pLogInfo->m_iLogType;
+				m_infoShow[m_iInfoShowCnt].iShowState = pLogInfo->GetShowState();
+				pLogInfo->GetLineStr(m_infoShow[m_iInfoShowCnt].szLine, iLineInnerIdx);
+
+				m_iInfoShowCnt++;
+
+				if(m_iInfoShowCnt>=(UINT)iShowLineCnt)
+				{
+					break;
+				}
+			}
+		}
+
+		if(i>iBegIdx)
+		{
+			CLogInfo*pLogInfo = (*it);
+			for(int j=0; j<pLogInfo->m_iLineCnt; j++)
+			{
+				m_infoShow[m_iInfoShowCnt].pLogInfo = pLogInfo;
+				m_infoShow[m_iInfoShowCnt].iInfoID = pLogInfo->m_iInfoID;
+			//	m_infoShow[m_iInfoShowCnt].iInfoIdx = i;
+				m_infoShow[m_iInfoShowCnt].iLineIdx = j;
+				m_infoShow[m_iInfoShowCnt].iLogType = pLogInfo->m_iLogType;
+				m_infoShow[m_iInfoShowCnt].iShowState = pLogInfo->GetShowState();
+				pLogInfo->GetLineStr(m_infoShow[m_iInfoShowCnt].szLine, j);
+
+				m_iInfoShowCnt++;
+
+				if(m_iInfoShowCnt>=(UINT)iShowLineCnt)
+				{
+					break;
+				}
+			}
+		}
+
+		if(m_iInfoShowCnt>=(UINT)iShowLineCnt)
+		{
+			break;
+		}
+
+		i++;
+	}
 }
 
 void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	SetFocus();
-
 	//当前滚动条的位置
 	CSize pos = m_scrollHelper->GetScrollPos();
 
@@ -526,31 +604,118 @@ void CLogWnd::OnLButtonDown(UINT nFlags, CPoint point)
 	//当前的选择
 	m_iLineMemSel = posy/m_iLineHeight;
 	
-	// 
-	int cnt = m_vInfoIdx.size();
-	if(m_iLineMemSel<cnt)
+	if(m_iLineMemSel<m_iInfoShowCnt)
 	{
-		CLogInfo*pLogInfo = m_vInfoIdx[m_iLineMemSel].pLogInfo;
+		CLogInfo*pLogInfo = m_infoShow[m_iLineMemSel].pLogInfo;
 
-		m_infoSel = m_vInfoIdx[m_iLineMemSel];
-
-		if(m_vInfoIdx[m_iLineMemSel].iLineIdx==0)
+		if(pLogInfo)
 		{
-			int posx = point.x+iOffsetX;
+			m_infoSel = m_infoShow[m_iLineMemSel];
 
-			//单击到加号显示数据的位置
-			if(posx>20&&posx<40)
+			if(m_infoShow[m_iLineMemSel].iLineIdx==0)
 			{
-				pLogInfo->SetIsOpen();
-				m_bScrollToEnd = false;
-				UpdateLine();
-			}
-		}
+				int posx = point.x+iOffsetX;
 
-		InvalidateRect(NULL);
+				//单击到加号显示数据的位置
+				if(posx>20&&posx<40)
+				{
+					if(pLogInfo)
+					{
+						pLogInfo->SetIsOpen();
+						m_bScrollToEnd = false;
+					}
+				}
+			}
+
+			m_bChange = true;
+		}
 	}
 
 	CWnd::OnLButtonDown(nFlags, point);
+}
+
+
+inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iDataLen, int iDataType)
+{
+	CLogInfo* pLogInfo = new CLogInfo;
+	pLogInfo->log(sInfo, iLogType, pData, iDataLen, iDataType, m_iTimeType, m_iInfoID++);
+	pLogInfo->SetLineDataCnt(m_iLineHexCnt[iDataType]);
+	pLogInfo->SetFormat(m_sFormat[iDataType]);
+	
+	EnterCriticalSection(&m_csLock);
+
+	if(m_listInfo.size()>MAX_INFO_CNT)
+	{
+		CLogInfo* pLogInfoEx  = m_listInfo.front();
+
+		if(pLogInfoEx)
+		{
+			delete pLogInfoEx;
+			pLogInfoEx = NULL;
+		}
+
+		m_listInfo.pop_front();
+	}
+
+	m_listInfo.push_back(pLogInfo);
+
+	LeaveCriticalSection(&m_csLock);
+
+	m_bChange = true;
+
+	//is open
+	if(m_bFileOpen)
+	{
+		CString sLine;
+		pLogInfo->GetTypeStr(sLine);
+		m_save.WriteString(sLine);
+		m_save.WriteString("\n");
+
+		for(int i=0; i<pLogInfo->m_iLineOpenCnt; i++)
+		{
+			pLogInfo->GetLineStr(sLine, i);
+			m_save.WriteString(sLine);
+			m_save.WriteString("\n");
+		}
+		m_save.WriteString("\n");
+	}
+}
+
+
+void CLogWnd::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if(1001==nIDEvent)
+	{
+		EnterCriticalSection(&m_csLock);
+		if(m_bChange)
+		{
+			//计算总行数
+			CalculateLineCnt();
+
+			//根据行数计算并设置滚动窗口总高度
+			UpdateDisplayHeight();
+
+			//计算显示行数
+			CalculateShowLineCnt();
+
+			if(m_bScrollToEnd)
+			{
+				m_scrollHelper->ScrollToEnd();
+			}
+
+			PickShowInfo(m_iShowLineCnt, m_iFirstShowLineIdx);
+
+			CDC*pDC = GetDC();
+			OnDraw(pDC);
+			ReleaseDC(pDC);
+
+			m_bChange = false;
+		}
+		LeaveCriticalSection(&m_csLock);
+	}
+
+	CWnd::OnTimer(nIDEvent);
 }
 
 
@@ -711,78 +876,5 @@ void CLogWnd::LogFatal(LPCSTR sInfo, const BYTE*pData, int iDataLen, int iDataTy
 {
 	Log(sInfo, LOG_FATAL, pData, iDataLen, iDataType);
 }
-
-inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iDataLen, int iDataType)
-{
-	CLogInfo* pLogInfo = new CLogInfo;
-	pLogInfo->log(sInfo, iLogType, pData, iDataLen, iDataType, m_iTimeType);
-	pLogInfo->SetLineDataCnt(m_iLineHexCnt[iDataType]);
-	pLogInfo->SetFormat(m_sFormat[iDataType]);
-	
-	EnterCriticalSection(&m_csLock);
-
-	if(m_listInfo.size()>1000000)
-	{
-		pop();
-	}
-
-	m_listInfo.push_back(pLogInfo);
-
-	m_bChange = true;
-
-	LeaveCriticalSection(&m_csLock);
-
-	//is open
-	if(m_bFileOpen)
-	{
-		CString sLine;
-		pLogInfo->GetTypeStr(sLine);
-		m_save.WriteString(sLine);
-		m_save.WriteString("\n");
-
-		for(int i=0; i<pLogInfo->m_iLineOpenCnt; i++)
-		{
-			pLogInfo->GetLineStr(sLine, i);
-			m_save.WriteString(sLine);
-			m_save.WriteString("\n");
-		}
-		m_save.WriteString("\n");
-	}
-}
-
-void CLogWnd::pop()
-{
-	if(m_listInfo.size()>0)
-	{
-		CLogInfo* pLogInfo  = m_listInfo.front();
-
-		if(pLogInfo) delete pLogInfo;
-
-		m_listInfo.pop_front();
-
-		UpdateLine();
-	}
-}
-
-
-void CLogWnd::OnTimer(UINT_PTR nIDEvent)
-{
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	if(1001==nIDEvent)
-	{
-		EnterCriticalSection(&m_csLock);
-		if(m_bChange)
-		{
-			UpdateLine();
-			m_bChange = false;
-		}
-		LeaveCriticalSection(&m_csLock);
-	}
-
-	CWnd::OnTimer(nIDEvent);
-}
-
-
-
 
 

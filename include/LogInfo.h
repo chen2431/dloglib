@@ -50,7 +50,7 @@ public:
 		STATE_CNT
 	};
 
-	void log(LPCSTR sInfo, int iLogType, const BYTE*pData, int len, int iDataType, int iTimeType)
+	void log(LPCSTR sInfo, int iLogType, const BYTE*pData, int len, int iDataType, int iTimeType, unsigned __int64 iInfoID)
 	{
 		GetLocalTime(&m_stm);
 
@@ -68,6 +68,8 @@ public:
 			m_pData = new BYTE[len];
 			memcpy(m_pData, pData, len);
 		}
+
+		m_iInfoID = iInfoID;
 	}
 
 	/**显示格式设置
@@ -178,15 +180,15 @@ public:
 	//!是否是显示数据状态
 	bool m_bOpen;
 
-	//!每行显示数据的长度
-	//int m_iLineDataCnt;
-
 	//! format
 	char m_sFormat[32];
 
 	//! data count of a line 
 	int m_iLineHexCnt;
 	int m_iLineHexCntEx;
+
+	//! 唯一的信息ID
+	unsigned __int64 m_iInfoID;
 
 private:
 	void GetLineDataStr(CString&sLine, int iLineIdx);
@@ -548,16 +550,23 @@ inline void CLogInfo::TimeFormat(CString& sTime, const SYSTEMTIME& stm, int iTim
 }
 
 
-/** 记录信息定位的结构
- */
-struct INFO_IDX
+/**	用于显示行的信息结构
+*/
+struct INFO_SHOW
 {
-	INFO_IDX():iInfoIdx(-1),iLineIdx(-1), pLogInfo(NULL){}
+	INFO_SHOW()
+		: iInfoID(0xFFFFFFFFFFFFFFFF)
+		, iLineIdx(0)
+		, iLogType(LOG_INFO)
+		, iShowState(CLogInfo::STATE_NONE)
+		, pLogInfo(NULL)
+	{}
 
-	void Reset(){iInfoIdx = -1; iLineIdx=-1; pLogInfo=NULL;}
-
-	int iInfoIdx;		//!<which info
-	int iLineIdx;		//!<in this info , which line
-	CLogInfo*pLogInfo;	//!<pointer of CLogInfo(log information)
+	unsigned __int64 iInfoID;	//!<which info
+	int iLineIdx;				//!<in this info , which line
+	int iLogType;				//!<type of log，is LOG_DEBUG LOG_INFO ...
+	int iShowState;				//!< STATE_NONE STATE_CLOSE STATE_OPEN
+	CLogInfo*pLogInfo;			//!<pointer of CLogInfo(log information)
+	CString szLine;				//!<string of line
 };
 

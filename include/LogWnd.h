@@ -15,7 +15,7 @@
 #endif
 
 #define LOGVIEWER_CLASSNAME    _T("MFCLogViewerCtrl")  // Window class name
-#define LOG_BUF_SIZE 8191
+
 // 
 /** class CLogWnd
 */
@@ -27,13 +27,17 @@ public:
 	CLogWnd();
 	virtual ~CLogWnd();
 
-	/** 设置保存日志的文件
-	 * @param sFileName 日志的文件名
-	 */
-	void InitFile(LPCSTR sFileName);
+	enum{
+		LOG_BUF_SIZE = 8091,
+		MAX_INFO_CNT = 1000000,	//1000000
+		MAX_SHOW_CNT = 4096		//最大显示的行数
+	};
 
-	/**
-	void InitFile(LPCSTR sFileName);
+	/** 设置保存日志的文件
+	 * @param sPath 日志的目录名
+	 * @param sPrefix 文件名的前缀
+	 */
+	void InitFile(LPCSTR sPath, LPCSTR sPrefix=_T("log"));
 
 	/** 设置每行显示数据参数
 	 * @param iLineDataCnt 每行显示数据的数量
@@ -58,8 +62,6 @@ public:
 	 * @param iTimeType: 0: year-month-day hour:minute:second 1: hour:minute:second 2:hour:minute:second.msec 3 year-month-day hour:minute:second.msec
 	 */
 	void SetTimeType(int iTimeType){ m_iTimeType = iTimeType;}
-
-
 
 	/** 调试日志输出
 	 * @param pszFmt 日志内容
@@ -91,8 +93,6 @@ public:
 	 * @param ...
 	 */
 	void LogFatal(const char*pszFmt, ...);
-
-
 
 	/** 调试数据日志显示
 	 * @param pData 数据
@@ -211,9 +211,22 @@ private:
 	*/
 	BOOL CLogWnd::RegisterWindowClass();
 
+	/** 生成目录
+	*/
+	BOOL CreateMultiLevelDirectory(const CString dd); 
+
 protected:
 	//!滚动控制
 	CScrollHelper*m_scrollHelper;
+
+	//! save log file
+	CStdioFile m_save;
+
+	//! is file open
+	BOOL m_bFileOpen;
+
+	//!发送数据的锁
+	CRITICAL_SECTION m_csLock;
 
 	//!是否有变化
 	bool m_bChange;
@@ -221,10 +234,61 @@ protected:
 	//!是否滚动到下部
 	bool m_bScrollToEnd;
 
-	//!行数
-	int m_iLineCnt;
+	//!显示时间的类型
+	int m_iTimeType;
 
-	//!行高低
+protected:
+
+	//////////////////////////////////////////////////////////////////////////
+	//!数据
+	std::list<CLogInfo*> m_listInfo;
+
+	//行数索引，用于保存当前信息（包括当前信息）之前的总行数
+	UINT *m_plineCnt;//[MAX_INFO_CNT];
+
+	//!当前显示的数据索引
+	INFO_SHOW *m_infoShow;//[MAX_SHOW_CNT];
+
+	//!显示信息的行数
+	UINT m_iInfoShowCnt;
+
+	//!当前鼠标选择的那条信息，那行
+	INFO_SHOW m_infoSel;
+
+	//!信息数量
+	UINT m_iInfoCnt;
+
+	//!总行数
+	UINT m_iAllLineCnt;
+
+	//!那行,显示中的那行
+	UINT m_iLineMemSel;
+
+	//信息计数
+	unsigned __int64 m_iInfoID;
+
+protected:
+
+	//显示的第一行是那一行
+	UINT m_iFirstShowLineIdx;
+
+	//!显示的行数
+	UINT m_iShowLineCnt;
+
+	//! 实际客户区
+	CRect m_rtClient;
+
+	//!在内存中的显示区域，大于等于客户区
+	CRect m_rtMem;
+
+	//!在内城区中实际显示的位置X
+	int m_iOffsetX;
+
+	//!在内城区中实际显示的位置Y
+	int m_iOffsetY;
+
+protected:
+	//!行高
 	int m_iLineHeight;
 
 	//!背景颜色
@@ -255,40 +319,31 @@ protected:
 	//! data count of a line 
 	int m_iLineHexCnt[DATA_TYPE_CNT];
 
-	//////////////////////////////////////////////////////////////////////////
-	//!数据
-	std::list<CLogInfo*> m_listInfo;
+protected:
 
-	//行数索引
-	std::vector<int> m_vLineCnt;
-
-	//!当前显示的数据索引
-	std::vector<INFO_IDX> m_vInfoIdx;
-
-	//!当前鼠标选择的那条信息，那行
-	INFO_IDX m_infoSel;	
-
-	//!那行,显示中的那行
-	int m_iLineMemSel;
-
-	CWnd* m_pParentWnd;
-	UINT m_nResId;
-
-	//!显示时间的类型
-	int m_iTimeType;
-
-	CStdioFile m_save;
-	BOOL m_bFileOpen;
-
-	//发送数据的锁
-	CRITICAL_SECTION m_csLock;
-
+	/** draw in dc
+	*/
 	void OnDraw(CDC*pDC);
-	void OnDrawMem(CDC*pDC, CRect& rect, int iShowLineCnt, int idx);
 
-	void pop();
-	void UpdateLine();
-	void UpdateLineCnt();
+	/** draw in memory dc
+	*/
+	void OnDrawMem(CDC*pDC, CRect& rect);
+
+	/** 计算显示的总行数
+	*/
+	void CalculateLineCnt();
+
+	/** 根据行数改变显示高度
+	 */
+	void UpdateDisplayHeight();
+
+	/** 计算显示行数
+	*/
+	void CalculateShowLineCnt();
+
+	/** 挑选显示的信息
+	*/
+	void PickShowInfo(UINT iShowLineCnt, UINT iLineIdx);
 
 protected:
 	DECLARE_MESSAGE_MAP()
