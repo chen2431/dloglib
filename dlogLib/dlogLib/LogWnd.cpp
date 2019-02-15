@@ -15,9 +15,11 @@ CLogWnd::CLogWnd()
  , m_iLineHeight(20)
  , m_bScrollToEnd(true)
  , m_iFontSize(90)
- , m_colorBack(RGB(255,255,255))
- , m_colorLine(RGB(232,250,255))
+ , m_colorBack(RGB(250,255,240))
+ //, m_colorLine(RGB(236,243,252))
+ , m_colorLine(RGB(238,250,230))
  , m_colorSel(RGB(204,232,255))
+ , m_colorSel1(RGB(220,240,255))
  , m_bChange(true)
  , m_iTopPos(20000)
  , m_iTimeType(0)
@@ -42,7 +44,7 @@ CLogWnd::CLogWnd()
 		m_colorFont[i] = RGB(0,0,96);
 	}
 
-	m_colorFont[LOG_DEBUG] = RGB(32,32,32);
+	m_colorFont[LOG_DEBUG] = RGB(31,48,62);
 	m_colorFont[LOG_INFO] = RGB(0,0,96);
 	m_colorFont[LOG_WARN] = RGB(139,69,0);
 	m_colorFont[LOG_ERROR] = RGB(168,96,96);
@@ -238,6 +240,8 @@ void CLogWnd::PreSubclassWindow()
 
 	m_menu.LoadMenu(IDR_MENU1);
 
+	
+
 	SetTimer(1001, 100, NULL);
 }
 
@@ -288,11 +292,26 @@ void CLogWnd::OnDraw(CDC*pDC)
 		}
 	}
 }
+#include <afxdrawmanager.h>
 
 void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 {
 	//背景
-	pDC->FillSolidRect(rect, m_colorBack);
+	//pDC->FillSolidRect(rect, m_colorBack);
+
+	CDrawingManager dm(*pDC);
+	//dm.Fill4ColorsGradient(rectClient, clr1, clr2, clr2, clr1, !bIsHorz);
+	//dm.FillGradient2(rect, RGB(250, 255, 240), RGB(250,240,255), 270);
+
+	//CRect rcRight = rect;rcRight.left = 36;
+	dm.Fill4ColorsGradient(rect, RGB(252,255,246), RGB(250, 255, 240), 
+		RGB(250, 255, 240), RGB(252, 255, 246));
+
+	CRect rcLeft = rect;
+	rcLeft.right = rcLeft.left+36;
+	pDC->FillSolidRect(rcLeft, RGB(245, 250, 232));
+	//dm.FillGradient2(rcLeft, RGB(250, 255, 240), RGB(232, 232, 228), 180);
+	dm.DrawLine(rcLeft.right, rcLeft.top, rcLeft.right, rcLeft.bottom, m_colorLine);
 
 	//按照每行画图
 	for(UINT i=0; i<m_iInfoShowCnt; i++)
@@ -307,12 +326,22 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 		if(m_infoShow[i].iInfoID==m_infoSel.iInfoID)
 		{
 			if(m_infoSel.iLineIdx==0)
-			{//显示多行
-				pDC->FillSolidRect(rcTxt, m_colorSel);
+			{
+				if(m_infoShow[i].iLineIdx>0)
+				{//显示多行
+					pDC->FillSolidRect(rcTxt, m_colorSel);
+				}
+				else
+				{
+					dm.Fill4ColorsGradient(rcTxt, m_colorSel1, m_colorSel, m_colorSel, 
+						m_colorSel1, TRUE, 24);
+				}
 			}
 			else if(m_infoSel.iLineIdx==m_infoShow[i].iLineIdx)
 			{//显示单行
-				pDC->FillSolidRect(rcTxt, m_colorSel);
+				//pDC->FillSolidRect(rcTxt, m_colorSel);
+				dm.Fill4ColorsGradient(rcTxt, m_colorSel1, m_colorSel, m_colorSel, 
+					m_colorSel1, TRUE, 24);
 			}
 		}
 
@@ -339,12 +368,19 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 				memDC.SelectObject(pOld);
 			}
 
-			CPen pen;
-			pen.CreatePen(PS_SOLID, 1, m_colorLine);
-			CPen*pOldPen = pDC->SelectObject(&pen);
-			pDC->MoveTo(rcLine.left, rcLine.top);
-			pDC->LineTo(rcLine.right, rcLine.top);
-			pDC->SelectObject(pOldPen);
+			if(rcLine.top>0)
+			{
+				if(m_infoShow[i].iInfoID!=m_infoSel.iInfoID)
+				{
+					CPen pen;
+					//pen.CreatePen(PS_DOT, 1, m_colorLine);
+					pen.CreatePen(PS_SOLID, 1, m_colorLine);
+					CPen*pOldPen = pDC->SelectObject(&pen);
+					pDC->MoveTo(rcLine.left+16, rcLine.top);
+					pDC->LineTo(rcLine.right-16, rcLine.top);
+					pDC->SelectObject(pOldPen);
+				}
+			}
 		}
 
 		int old = pDC->SetBkMode(TRANSPARENT);

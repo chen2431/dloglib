@@ -117,6 +117,7 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	m_log.SetTimeType(1);
 	m_log.InitFile("c:\\buaax");
+	//m_log.ModifyStyle(0, WS_BORDER|WS_THICKFRAME );
 
 	m_bInit = TRUE;
 
@@ -206,7 +207,7 @@ void CdlogDemoDlg::OnBnClickedButton2()
 
 	i++;
 
-	m_log.LogInfo(s, LOG_INFO, NULL, 0);
+	m_log.LogDebug(s, LOG_INFO, NULL, 0);
 }
 
 

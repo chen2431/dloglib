@@ -299,6 +299,7 @@ protected:
 	COLORREF m_colorLine;
 	//!选择的颜色
 	COLORREF m_colorSel;
+	COLORREF m_colorSel1;
 
 	//!信息类型的文字颜色
 	COLORREF m_colorFont[8];
