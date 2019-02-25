@@ -63,6 +63,16 @@ public:
 	 */
 	void SetTimeType(int iTimeType){ m_iTimeType = iTimeType;}
 
+	/** 设置字体大小
+	 * @param iFontSize 字体大小
+	 */
+	void SetFontSize(int iFontSize=90){m_iFontSize = iFontSize;}
+
+	/** 设置行的高度
+	 * @param iFontSize 字体大小
+	 */
+	void SetLineHeight(int iLineHeight=20){m_iLineHeight = iLineHeight;}
+
 	/** 调试日志输出
 	 * @param pszFmt 日志内容
 	 * @param ...
@@ -300,6 +310,7 @@ protected:
 	//!选择的颜色
 	COLORREF m_colorSel;
 	COLORREF m_colorSel1;
+	COLORREF m_colorSel2;
 
 	//!信息类型的文字颜色
 	COLORREF m_colorFont[8];

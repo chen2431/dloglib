@@ -15,11 +15,13 @@ CLogWnd::CLogWnd()
  , m_iLineHeight(20)
  , m_bScrollToEnd(true)
  , m_iFontSize(90)
- , m_colorBack(RGB(250,255,240))
+ , m_colorBack(RGB(250,250,255))
  //, m_colorLine(RGB(236,243,252))
  , m_colorLine(RGB(238,250,230))
  , m_colorSel(RGB(204,232,255))
- , m_colorSel1(RGB(220,240,255))
+ //, m_colorSel1(RGB(220,240,255))
+ , m_colorSel1(RGB(227,245,255))
+ , m_colorSel2(RGB(215,240,255))
  , m_bChange(true)
  , m_iTopPos(20000)
  , m_iTimeType(0)
@@ -44,8 +46,9 @@ CLogWnd::CLogWnd()
 		m_colorFont[i] = RGB(0,0,96);
 	}
 
-	m_colorFont[LOG_DEBUG] = RGB(31,48,62);
-	m_colorFont[LOG_INFO] = RGB(0,0,96);
+	//m_colorFont[LOG_DEBUG] = RGB(31,48,62);
+	m_colorFont[LOG_DEBUG] = RGB(0,0,96);
+	m_colorFont[LOG_INFO] = RGB(0,16,4);
 	m_colorFont[LOG_WARN] = RGB(139,69,0);
 	m_colorFont[LOG_ERROR] = RGB(168,96,96);
 	m_colorFont[LOG_ERROR] = RGB(255,0,0);
@@ -308,7 +311,7 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 		RGB(250, 255, 240), RGB(252, 255, 246));
 
 	CRect rcLeft = rect;
-	rcLeft.right = rcLeft.left+36;
+	rcLeft.right = rcLeft.left+40;
 	pDC->FillSolidRect(rcLeft, RGB(245, 250, 232));
 	//dm.FillGradient2(rcLeft, RGB(250, 255, 240), RGB(232, 232, 228), 180);
 	dm.DrawLine(rcLeft.right, rcLeft.top, rcLeft.right, rcLeft.bottom, m_colorLine);
@@ -320,7 +323,8 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 
 		CRect rcMark = rcLine; rcMark.right = rcMark.left+20;
 		CRect rcState = rcLine;rcState.left = rcMark.right; rcState.right = rcState.left+20;
-		CRect rcTxt = rcLine; rcTxt.left = rcState.right;
+		CRect rcTxt = rcLine; rcTxt.left = rcState.right+8;
+		CRect rcSel = rcLine; rcSel.left = rcState.right+2; rcSel.right-=2;
 
 		//鼠标选择的信息或者行
 		if(m_infoShow[i].iInfoID==m_infoSel.iInfoID)
@@ -329,19 +333,27 @@ void CLogWnd::OnDrawMem(CDC*pDC, CRect& rect)
 			{
 				if(m_infoShow[i].iLineIdx>0)
 				{//显示多行
-					pDC->FillSolidRect(rcTxt, m_colorSel);
+					pDC->FillSolidRect(rcSel, m_colorSel);
+					dm.DrawLine(rcSel.left-1, rcSel.top-1, rcSel.left-1, rcSel.bottom, m_colorSel);
+					dm.DrawLine(rcSel.right, rcSel.top-1, rcSel.right, rcSel.bottom, m_colorSel);
 				}
 				else
 				{
-					dm.Fill4ColorsGradient(rcTxt, m_colorSel1, m_colorSel, m_colorSel, 
-						m_colorSel1, TRUE, 24);
+					dm.Fill4ColorsGradient(rcSel, m_colorSel1, m_colorSel2, m_colorSel, 
+						m_colorSel1, TRUE, 30);
+					dm.DrawLine(rcSel.left-1, rcSel.top+1, rcSel.left-1, rcSel.bottom-2, m_colorSel);
+					dm.DrawLine(rcSel.right, rcSel.top+1, rcSel.right, rcSel.bottom-2, m_colorSel);
 				}
+
 			}
 			else if(m_infoSel.iLineIdx==m_infoShow[i].iLineIdx)
 			{//显示单行
 				//pDC->FillSolidRect(rcTxt, m_colorSel);
-				dm.Fill4ColorsGradient(rcTxt, m_colorSel1, m_colorSel, m_colorSel, 
-					m_colorSel1, TRUE, 24);
+				dm.Fill4ColorsGradient(rcSel, m_colorSel1, m_colorSel2, m_colorSel, 
+					m_colorSel1, TRUE, 30);
+
+				dm.DrawLine(rcSel.left-1, rcSel.top+1, rcSel.left-1, rcSel.bottom-2, m_colorSel);
+				dm.DrawLine(rcSel.right, rcSel.top+1, rcSel.right, rcSel.bottom-2, m_colorSel);
 			}
 		}
 

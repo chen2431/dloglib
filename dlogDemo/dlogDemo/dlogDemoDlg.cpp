@@ -115,7 +115,7 @@ BOOL CdlogDemoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	m_log.SetTimeType(1);
+	m_log.SetTimeType(0);
 	m_log.InitFile("c:\\buaax");
 	//m_log.ModifyStyle(0, WS_BORDER|WS_THICKFRAME );
 
