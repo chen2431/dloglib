@@ -738,6 +738,7 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 	pLogInfo->log(sInfo, iLogType, pData, iDataLen, iDataType, m_iTimeType, m_iInfoID++);
 	pLogInfo->SetLineDataCnt(m_iLineHexCnt[iDataType]);
 	pLogInfo->SetFormat(m_sFormat[iDataType]);
+	if(pData) pLogInfo->SetIsOpen();
 	
 	EnterCriticalSection(&m_csLock);
 

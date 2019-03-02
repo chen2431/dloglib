@@ -66,7 +66,7 @@ public:
 
 		m_iLogType = iLogType;
 		m_iDataType = iDataType;
-
+		m_iDataLen = 0;
 		if(pData!=NULL&&len>0)
 		{
 			m_iDataLen = len;
