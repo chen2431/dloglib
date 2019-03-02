@@ -96,6 +96,7 @@ CLogWnd::~CLogWnd()
 		CLogInfo*pLogInfo = (*it);
 		delete pLogInfo;
 	}
+	m_listInfo.clear();
 	LeaveCriticalSection(&m_csLock);
 
 	if(m_plineCnt) delete [] m_plineCnt;
@@ -742,15 +743,26 @@ inline void CLogWnd::Log(LPCSTR sInfo, int iLogType, const BYTE*pData, int iData
 
 	if(m_listInfo.size()>MAX_INFO_CNT)
 	{
-		CLogInfo* pLogInfoEx  = m_listInfo.front();
-
-		if(pLogInfoEx)
+		for(int i=0; i<MAX_INFO_CNT/2; i++)
 		{
-			delete pLogInfoEx;
-			pLogInfoEx = NULL;
+			CLogInfo* pLogInfoEx  = m_listInfo.front();
+
+			if(pLogInfoEx)
+			{
+				delete pLogInfoEx;
+				pLogInfoEx = NULL;
+			}
+
+			m_listInfo.pop_front();
+
 		}
 
-		m_listInfo.pop_front();
+		//m_listInfo.clear();
+
+		m_iInfoShowCnt = 0;
+
+		m_bChange = true;
+
 	}
 
 	m_listInfo.push_back(pLogInfo);

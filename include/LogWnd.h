@@ -29,7 +29,7 @@ public:
 
 	enum{
 		LOG_BUF_SIZE = 8091,
-		MAX_INFO_CNT = 1000000,	//1000000
+		MAX_INFO_CNT = 512,	//1000000
 		MAX_SHOW_CNT = 4096		//最大显示的行数
 	};
 

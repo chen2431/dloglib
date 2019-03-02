@@ -225,7 +225,7 @@ void CdlogDemoDlg::OnTimer(UINT_PTR nIDEvent)
 */
 BOOL CdlogDemoDlg::ScanThreadFunction()
 {
-	//OnBnClickedButton1();
+	OnBnClickedButton1();
 
 	Sleep(1);
 	return m_bRun;

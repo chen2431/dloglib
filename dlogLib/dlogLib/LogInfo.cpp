@@ -3,8 +3,7 @@
 
 
 CLogInfo::CLogInfo(void)
-	: m_pData(NULL)
-	, m_iLogType(0)
+	: m_iLogType(0)
 	, m_iDataType(0)
 	, m_iDataLen(0)
 	, m_iLineCnt(1)
@@ -15,7 +14,6 @@ CLogInfo::CLogInfo(void)
 
 CLogInfo::~CLogInfo(void)
 {
-	if(m_pData) delete [] m_pData;
 }
 
 void CLogInfo::SetIsOpen()

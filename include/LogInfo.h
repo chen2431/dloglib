@@ -50,6 +50,11 @@ public:
 		STATE_CNT
 	};
 
+	enum{
+		DATA_BUF_LEN = 8192,
+		INFO_BUF_LEN = 1024
+	};
+
 	void log(LPCSTR sInfo, int iLogType, const BYTE*pData, int len, int iDataType, int iTimeType, unsigned __int64 iInfoID)
 	{
 		GetLocalTime(&m_stm);
@@ -65,8 +70,9 @@ public:
 		if(pData!=NULL&&len>0)
 		{
 			m_iDataLen = len;
-			m_pData = new BYTE[len];
-			memcpy(m_pData, pData, len);
+			if(m_iDataLen>DATA_BUF_LEN) m_iDataLen=DATA_BUF_LEN;
+			//m_pData = new BYTE[len];
+			memcpy(m_dataBuf, pData, m_iDataLen);
 		}
 
 		m_iInfoID = iInfoID;
@@ -155,7 +161,7 @@ public:
 	}
 
 //private:
-	char m_sInfo[8192];
+	char m_sInfo[INFO_BUF_LEN];
 
 	//!记录时间
 	SYSTEMTIME m_stm;
@@ -167,9 +173,10 @@ public:
 	int m_iDataType;
 
 	//!数据
-	BYTE*m_pData;
+	//BYTE*m_pData;
 	//!数据长度
-	int m_iDataLen;
+	UINT m_iDataLen;
+	BYTE m_dataBuf[DATA_BUF_LEN];
 
 	//!行数
 	int m_iLineCnt;
@@ -258,18 +265,18 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 	{
 	case DATA_HEX8:
 		{
-			int iBeg = iLineIdx*m_iLineHexCnt;
-			int iEnd = iBeg+m_iLineHexCnt;
+			UINT iBeg = iLineIdx*m_iLineHexCnt;
+			UINT iEnd = iBeg+m_iLineHexCnt;
 			if(iEnd>m_iDataLen) iEnd = m_iDataLen;
 
 			sLine.Format(_T("[%08X]"), iLineIdx*m_iLineHexCnt);
 
 			CString sTemp;
-			for(int i=iBeg; i<iEnd; i++)
+			for(UINT i=iBeg; i<iEnd; i++)
 			{
 				if(i%8==0) sLine+=_T(" ");
 
-				sTemp.Format(m_sFormat, m_pData[i]);
+				sTemp.Format(m_sFormat, m_dataBuf[i]);
 				sLine+=" ";
 				//sTemp.Format(" %02X", m_pData[i]);
 				sLine+=sTemp;
@@ -278,7 +285,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX16:
 		{
-			WORD*pData = (WORD*)m_pData;
+			WORD*pData = (WORD*)m_dataBuf;
 			int iDataLen = m_iDataLen/2;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -301,7 +308,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX16B:
 		{
-			WORD*pData = (WORD*)m_pData;
+			WORD*pData = (WORD*)m_dataBuf;
 			int iDataLen = m_iDataLen/2;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -329,7 +336,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX32:
 		{
-			DWORD*pData = (DWORD*)m_pData;
+			DWORD*pData = (DWORD*)m_dataBuf;
 			int iDataLen = m_iDataLen/4;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -350,7 +357,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX32B:
 		{
-			DWORD*pData = (DWORD*)m_pData;
+			DWORD*pData = (DWORD*)m_dataBuf;
 			int iDataLen = m_iDataLen/4;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -375,7 +382,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX64:
 		{
-			unsigned __int64 *pData = (unsigned __int64*)m_pData;
+			unsigned __int64 *pData = (unsigned __int64*)m_dataBuf;
 			int iDataLen = m_iDataLen/8;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -396,7 +403,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_HEX64B:
 		{
-			unsigned __int64* pData = (unsigned __int64*)m_pData;
+			unsigned __int64* pData = (unsigned __int64*)m_dataBuf;
 			int iDataLen = m_iDataLen/8;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -419,7 +426,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_FLOAT:
 		{
-			float*pData = (float*)m_pData;
+			float*pData = (float*)m_dataBuf;
 			int iDataLen = m_iDataLen/4;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -440,7 +447,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_FLOATB:
 		{
-			float*pData = (float*)m_pData;
+			float*pData = (float*)m_dataBuf;
 			int iDataLen = m_iDataLen/4;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -465,7 +472,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_DOUBLE:
 		{
-			double*pData = (double*)m_pData;
+			double*pData = (double*)m_dataBuf;
 			int iDataLen = m_iDataLen/8;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
@@ -486,7 +493,7 @@ inline void CLogInfo::GetLineDataStr(CString&sLine, int iLineIdx)
 		break;
 	case DATA_DOUBLEB:
 		{
-			double*pData = (double*)m_pData;
+			double*pData = (double*)m_dataBuf;
 			int iDataLen = m_iDataLen/8;
 
 			int iBeg = iLineIdx*m_iLineHexCnt;
